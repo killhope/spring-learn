@@ -288,10 +288,15 @@ configure(allprojects) { project ->
 			maven { url "https://repo.spring.io/milestone" } // Reactor
 		}
 	}
-	configurations.all {
+	/*configurations.all {
 		resolutionStrategy {
 			cacheChangingModulesFor 0, "seconds"
 			cacheDynamicVersionsFor 0, "seconds"
+		}
+	}*/
+	allprojects {
+		repositories {
+			maven{ url 'http://maven.aliyun.com/nexus/content/groups/public/'}
 		}
 	}
 }
