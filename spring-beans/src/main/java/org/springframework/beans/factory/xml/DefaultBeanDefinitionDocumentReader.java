@@ -95,6 +95,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		this.readerContext = readerContext;
 		logger.debug("Loading bean definitions");
 		Element root = doc.getDocumentElement();
+		//对，没给错，注册 BeanDefinition 的方法在这里
 		doRegisterBeanDefinitions(root);
 	}
 
@@ -131,9 +132,11 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 
 		if (this.delegate.isDefaultNamespace(root)) {
 			String profileSpec = root.getAttribute(PROFILE_ATTRIBUTE);
+			//如果 profile 存在，说明 xml 配置环境了，只获取对应环境下的 bean
 			if (StringUtils.hasText(profileSpec)) {
 				String[] specifiedProfiles = StringUtils.tokenizeToStringArray(
 						profileSpec, BeanDefinitionParserDelegate.MULTI_VALUE_ATTRIBUTE_DELIMITERS);
+				// profile 是 dev ，非 dev 下的 beans 直接略过
 				if (!getReaderContext().getEnvironment().acceptsProfiles(specifiedProfiles)) {
 					if (logger.isInfoEnabled()) {
 						logger.info("Skipped XML bean definition file due to specified profiles [" + profileSpec +
@@ -143,8 +146,9 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 				}
 			}
 		}
-
+		// preProcessXml 、postProcessXml 两个方法是空方法。体现了设计模式的模板方法模式，子类如果想用，自己去实现
 		preProcessXml(root);
+		//解析幷注册 bean 的方法
 		parseBeanDefinitions(root, this.delegate);
 		postProcessXml(root);
 
@@ -164,6 +168,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	 * "import", "alias", "bean".
 	 * @param root the DOM root element of the document
 	 */
+	//默认的标签用 parseDefaultElement 自定义的标签用 parseCustomElement
 	protected void parseBeanDefinitions(Element root, BeanDefinitionParserDelegate delegate) {
 		if (delegate.isDefaultNamespace(root)) {
 			NodeList nl = root.getChildNodes();
@@ -172,31 +177,42 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 				if (node instanceof Element) {
 					Element ele = (Element) node;
 					if (delegate.isDefaultNamespace(ele)) {
+						//默认的标签用 parseDefaultElement  解析和注册都在里面，没有跟丢
 						parseDefaultElement(ele, delegate);
 					}
 					else {
+						//自定义的标签用 parseCustomElement
 						delegate.parseCustomElement(ele);
 					}
 				}
 			}
 		}
 		else {
+			//自定义的标签用 parseCustomElement
 			delegate.parseCustomElement(root);
 		}
 	}
 
 	private void parseDefaultElement(Element ele, BeanDefinitionParserDelegate delegate) {
+		//对 import 标签的处理
+		//逻辑是先解析出文件，再交给 bean 解析
 		if (delegate.nodeNameEquals(ele, IMPORT_ELEMENT)) {
 			importBeanDefinitionResource(ele);
 		}
+		//alias
+		//注册别名
 		else if (delegate.nodeNameEquals(ele, ALIAS_ELEMENT)) {
 			processAliasRegistration(ele);
 		}
+		//bean
+		//主角，创建 bean 的逻辑都在这里
 		else if (delegate.nodeNameEquals(ele, BEAN_ELEMENT)) {
+			//Element 转为 BeanDefinition，然后注册BeanDefinition
 			processBeanDefinition(ele, delegate);
 		}
+		//beans
+		//递归调用，最终还是得将一个个 bean 交个上面的主角
 		else if (delegate.nodeNameEquals(ele, NESTED_BEANS_ELEMENT)) {
-			// recurse
 			doRegisterBeanDefinitions(ele);
 		}
 	}
@@ -302,18 +318,21 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	 * and registering it with the registry.
 	 */
 	protected void processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate) {
+		//经过 delegate.parseBeanDefinitionElement(ele) 的处理，bdHolder 里已经包含了 class、name、id、alias 等属性
 		BeanDefinitionHolder bdHolder = delegate.parseBeanDefinitionElement(ele);
 		if (bdHolder != null) {
+			//处理 bean 下自定义的属性 例子： <bean id="test" class="..MyTest">  <mybean:user username="aaa" /> </bean>
 			bdHolder = delegate.decorateBeanDefinitionIfRequired(ele, bdHolder);
 			try {
-				// Register the final decorated instance.
+				//根据处理好的 bdHolder，注册 BeanDefinition
 				BeanDefinitionReaderUtils.registerBeanDefinition(bdHolder, getReaderContext().getRegistry());
 			}
 			catch (BeanDefinitionStoreException ex) {
 				getReaderContext().error("Failed to register bean definition with name '" +
 						bdHolder.getBeanName() + "'", ele, ex);
 			}
-			// Send registration event.
+			//通知监听器，BeanDefinition 已经注册完毕
+			//当程序员需要对注册 BeanDefinition 时间监听时，自己将处理逻辑写入监听器中，Sprig 本身没有相关的逻辑
 			getReaderContext().fireComponentRegistered(new BeanComponentDefinition(bdHolder));
 		}
 	}

@@ -52,6 +52,9 @@ import org.springframework.core.io.Resource;
  */
 @Deprecated
 @SuppressWarnings({"serial", "all"})
+//DefaultListableBeanFactory 是整个 bean 加载的核心部分，是 Spring 注册及加载 bean 的默认实现
+//XmlBeanFactory 使用自定义的 xml 读取器 XmlBeanDefinitionReader
+//BeanFactory bf=new XmlBeanFactory(new ClassPathResource("collections.xml"));
 public class XmlBeanFactory extends DefaultListableBeanFactory {
 
 	private final XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(this);

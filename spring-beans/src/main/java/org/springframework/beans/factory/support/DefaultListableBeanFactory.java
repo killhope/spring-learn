@@ -791,6 +791,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 		if (beanDefinition instanceof AbstractBeanDefinition) {
 			try {
+				//校验 beanDefinition  1、methodOverrides 与工程方法不能同时共存 2、如果有 methodOverrides，必须有对应的方法
 				((AbstractBeanDefinition) beanDefinition).validate();
 			}
 			catch (BeanDefinitionValidationException ex) {
@@ -798,9 +799,11 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 						"Validation of bean definition failed", ex);
 			}
 		}
-
+		//以前需要 synchronized 来访问 beanDefinitionMap，现在 beanDefinitionMap 为 ConcurrentHashMap，取消了 synchronized
 		BeanDefinition existingDefinition = this.beanDefinitionMap.get(beanName);
+		//已经注册 beanName 的情况
 		if (existingDefinition != null) {
+			// beanName 已注册（上一个 if 判断的）并且该 bean 不允许被覆盖，抛出异常
 			if (!isAllowBeanDefinitionOverriding()) {
 				throw new BeanDefinitionStoreException(beanDefinition.getResourceDescription(), beanName,
 						"Cannot register bean definition [" + beanDefinition + "] for bean '" + beanName +
@@ -828,6 +831,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 							"] with [" + beanDefinition + "]");
 				}
 			}
+			//注册 bean
 			this.beanDefinitionMap.put(beanName, beanDefinition);
 		}
 		else {
