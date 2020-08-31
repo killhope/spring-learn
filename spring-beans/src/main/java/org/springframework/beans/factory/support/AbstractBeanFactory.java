@@ -243,14 +243,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		String beanName = transformedBeanName(name);
 		Object bean;
 
-		/*
-		 * 检查缓存中或者实例工厂中是否有对应的实例
-		 * 为什么要这样做呢？
-		 * 因为在创建单例 bean 的时候会存在依赖注入的情况，而在创建依赖的时候为了避免循环依赖，
-		 * Spring 创建 bean 的原则是不等 bean 创建完成就会将创建 bean 的 ObjectFactory 提早曝光
-		 * 也就是将 ObjectFactory 加入到缓存中，一旦下个 bean 创建时候需要依赖上个 bean 则直接使用 ObjectFactory
-		 */
-		//1.直接尝试从缓存中获取或者 singletonObjects 中的 singletonObject 获取
+		//1.直接尝试从缓存中获取或者实例工厂中获取  实例工厂是为了处理单例的循环依赖的
 		Object sharedInstance = getSingleton(beanName);
 		//2 缓存中有
 		if (sharedInstance != null && args == null) {
