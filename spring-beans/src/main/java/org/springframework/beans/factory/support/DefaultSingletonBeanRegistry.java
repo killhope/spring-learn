@@ -180,7 +180,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	protected Object getSingleton(String beanName, boolean allowEarlyReference) {
 		//检查缓存中是否存在实例
 		Object singletonObject = this.singletonObjects.get(beanName);
-		//缓存中不存在实例并且 isSingletonCurrentlyInCreation（当前正在创建单例），就等着获取缓存
+		//缓存中不存在实例并且 isSingletonCurrentlyInCreation（当前已经有人正在创建单例），就等着获取缓存
 		if (singletonObject == null && isSingletonCurrentlyInCreation(beanName)) {
 			//缓存中不存在，则锁定后进行处理
 			synchronized (this.singletonObjects) {

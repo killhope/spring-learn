@@ -479,7 +479,9 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 
 		try {
-			//应用初始化前的后处理器 BeanPostProcessors，解析指定 bean 是否存在初始化前的短路操作
+			//创建 bean 之前，执行 BeanPostProcessors 前置方法，
+			// 	如果前置方法成功创建了 bean，执行后置方法，返回的 bean 不为空，直接返回 bean。
+			// 	如果前置方法没有创建 bean，继续往下执行，不会执行后置方法
 			Object bean = resolveBeforeInstantiation(beanName, mbdToUse);
 			if (bean != null) {
 				//如果创建好了代理 bean，直接返回
@@ -574,7 +576,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		try {
 			//5.属性注入：将所有属性值注入到 bean 中，其中，可能存在依赖于其它 bean 的属性，则会递归初始化所依赖的 bean
 			populateBean(beanName, mbd, instanceWrapper);
-			//调用初始化方法 init-method
+			//6.调用初始化方法 init-method ：激活 aware 方法、看情况激活 BeanPostProcesors 前置、后置方法、激活用户自定义 init 方法
 			exposedObject = initializeBean(beanName, exposedObject, mbd);
 		}
 		catch (Throwable ex) {
@@ -589,12 +591,13 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		if (earlySingletonExposure) {
 			Object earlySingletonReference = getSingleton(beanName, false);
-			//6.出现循环依赖，开始处理循环依赖    注：earlySingletonReference 只有在检测到循环依赖的情况下才会不为空
+			//7.出现循环依赖，开始处理循环依赖    注：earlySingletonReference 只有在检测到循环依赖的情况下才会不为空
 			if (earlySingletonReference != null) {
 				//如果 bean 没有在初始化方法中被改变（上面的 initializeBean）
 				if (exposedObject == bean) {
 					exposedObject = earlySingletonReference;
 				}
+				//是否允许循环依赖
 				else if (!this.allowRawInjectionDespiteWrapping && hasDependentBean(beanName)) {
 					String[] dependentBeans = getDependentBeans(beanName);
 					Set<String> actualDependentBeans = new LinkedHashSet<>(dependentBeans.length);
@@ -619,7 +622,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		// Register bean as disposable.
 		try {
-			//7.注册 DisposableBean ，销毁 bean 的时候调用
+			//8.注册 DisposableBean ，销毁 bean 的时候调用
 			registerDisposableBeanIfNecessary(beanName, bean, mbd);
 		}
 		catch (BeanDefinitionValidationException ex) {
