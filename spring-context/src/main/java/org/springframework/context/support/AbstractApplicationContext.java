@@ -521,7 +521,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			//2.初始化 BeanFactory，幷进行 XML 文件读取。这里处理完 Application 已经拥有了 BeanFactory 的功能，可以进行 bean 的提取等基础操作了
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
-			//3.对 BeanFactory 进行各种功能填充。比如：对@Autowire、@Qualifier 注解的支持
+			//3.在 BeanFactory 原有功能的基础上，添加多重新的功能。比如 SpEL 的支持、属性注册的支持、ApplicationContextAwareProcessor 处理器等功能
 			prepareBeanFactory(beanFactory);
 
 			try {
@@ -590,12 +590,11 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		if (logger.isInfoEnabled()) {
 			logger.info("Refreshing " + this);
 		}
-
-		// Initialize any placeholder property sources in the context environment.
+		//1、2 看似没什么逻辑，其实是给用户下放最大的权利，用户可以根据自己的需求拓展
+		//1.留给子类覆盖
 		initPropertySources();
 
-		// Validate that all properties marked as required are resolvable:
-		// see ConfigurablePropertyResolver#setRequiredProperties
+		//2.验证需要的属性文件是否都已放入环境中
 		getEnvironment().validateRequiredProperties();
 
 		// Store pre-refresh ApplicationListeners...
@@ -629,7 +628,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * @see #getBeanFactory()
 	 */
 	protected ConfigurableListableBeanFactory obtainFreshBeanFactory() {
+		//初始化 BeanFactory，并进行 XML 解析
 		refreshBeanFactory();
+		//得到 BeanFactory
 		ConfigurableListableBeanFactory beanFactory = getBeanFactory();
 		if (logger.isDebugEnabled()) {
 			logger.debug("Bean factory for " + getDisplayName() + ": " + beanFactory);
@@ -643,13 +644,16 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * @param beanFactory the BeanFactory to configure
 	 */
 	protected void prepareBeanFactory(ConfigurableListableBeanFactory beanFactory) {
-		// Tell the internal bean factory to use the context's class loader etc.
+		//设置 beanFactory 的 classLoder 为当前 context 的 classLoader
 		beanFactory.setBeanClassLoader(getClassLoader());
+		//设置 beanFactory 的表达式语言处理器(对 SpEL 语言的支持)，默认可以使用 #{bean.xxx} 的形式来调用相关属性
 		beanFactory.setBeanExpressionResolver(new StandardBeanExpressionResolver(beanFactory.getBeanClassLoader()));
+		//为 beanFactory 增加了一个默认的 PropertyEditor，这个主要是对 bean 的属性等设置管理的一个工具
 		beanFactory.addPropertyEditorRegistrar(new ResourceEditorRegistrar(this, getEnvironment()));
 
-		// Configure the bean factory with context callbacks.
+		//添加 BeanPostProcessor
 		beanFactory.addBeanPostProcessor(new ApplicationContextAwareProcessor(this));
+		//设置几个忽略自动装配的接口
 		beanFactory.ignoreDependencyInterface(EnvironmentAware.class);
 		beanFactory.ignoreDependencyInterface(EmbeddedValueResolverAware.class);
 		beanFactory.ignoreDependencyInterface(ResourceLoaderAware.class);
@@ -657,8 +661,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		beanFactory.ignoreDependencyInterface(MessageSourceAware.class);
 		beanFactory.ignoreDependencyInterface(ApplicationContextAware.class);
 
-		// BeanFactory interface not registered as resolvable type in a plain factory.
-		// MessageSource registered (and found for autowiring) as a bean.
+		//设置几个注册依赖的特殊规则 例：注册了 BeanFactory 的解析依赖，当 bean 的属性注入的时候，一旦检测到属性为 BeanFactory，就会将 beanFactory 的实例注入进去
 		beanFactory.registerResolvableDependency(BeanFactory.class, beanFactory);
 		beanFactory.registerResolvableDependency(ResourceLoader.class, this);
 		beanFactory.registerResolvableDependency(ApplicationEventPublisher.class, this);
@@ -667,14 +670,14 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		// Register early post-processor for detecting inner beans as ApplicationListeners.
 		beanFactory.addBeanPostProcessor(new ApplicationListenerDetector(this));
 
-		// Detect a LoadTimeWeaver and prepare for weaving, if found.
+		//增加对 AspectJ 的支持
 		if (beanFactory.containsBean(LOAD_TIME_WEAVER_BEAN_NAME)) {
 			beanFactory.addBeanPostProcessor(new LoadTimeWeaverAwareProcessor(beanFactory));
 			// Set a temporary ClassLoader for type matching.
 			beanFactory.setTempClassLoader(new ContextTypeMatchClassLoader(beanFactory.getBeanClassLoader()));
 		}
 
-		// Register default environment beans.
+		//添加默认的系统环境 bean
 		if (!beanFactory.containsLocalBean(ENVIRONMENT_BEAN_NAME)) {
 			beanFactory.registerSingleton(ENVIRONMENT_BEAN_NAME, getEnvironment());
 		}
