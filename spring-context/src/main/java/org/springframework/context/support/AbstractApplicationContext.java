@@ -528,7 +528,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				//4.子类覆盖方法做额外的处理
 				postProcessBeanFactory(beanFactory);
 
-				//5.激活各种 BeanFactory 的处理器
+				//5.实例化和调用所有 BeanFactoryPostProcessor（包括子类 BeanDefinitionRegistryPostProcessor）
 				invokeBeanFactoryPostProcessors(beanFactory);
 
 				//6.注册拦截 Bean 创建的 Bean 处理器，这里只是注册，真正调用是在 getBean
@@ -705,6 +705,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * <p>Must be called before singleton instantiation.
 	 */
 	protected void invokeBeanFactoryPostProcessors(ConfigurableListableBeanFactory beanFactory) {
+		//1.getBeanFactoryPostProcessors() 拿到当前应用上下文 BeanFactoryPostProcessor 变量的值，默认是为空的，如果有值，说明是通过 Spring 给用户留的自定义上下文的拓展点加上去的
+		//2.实例化幷调用所有已注册的 BeanFactoryPostProcessor
 		PostProcessorRegistrationDelegate.invokeBeanFactoryPostProcessors(beanFactory, getBeanFactoryPostProcessors());
 
 		// Detect a LoadTimeWeaver and prepare for weaving, if found in the meantime
