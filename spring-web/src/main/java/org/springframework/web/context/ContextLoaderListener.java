@@ -35,7 +35,9 @@ import javax.servlet.ServletContextListener;
  * @see org.springframework.web.WebApplicationInitializer
  */
 public class ContextLoaderListener extends ContextLoader implements ServletContextListener {
-
+//ContextLoaderListener 是实现了 javax.servlet.ServletContextListener 接口的服务器端程序，
+// 随 web 应用的启动而启动，只初始化一次，随 web 应用的停止而销毁。
+// 在web应用启动的时候会调用 contextInitialized 方法，停止的时候会调用 contextDestroyed 方法。
 	/**
 	 * Create a new {@code ContextLoaderListener} that will create a web application
 	 * context based on the "contextClass" and "contextConfigLocation" servlet

@@ -516,42 +516,52 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 
 	@Override
 	public void refresh() throws BeansException, IllegalStateException {
+		//加锁
 		synchronized (this.startupShutdownMonitor) {
-			//1.初始化前的准备工作，例如对系统属性或者环境变量进行准备及验证
+			//1.准备工作，比如对系统属性或者环境变量进行验证
 			prepareRefresh();
-			//2.初始化 BeanFactory，幷进行 XML 文件读取。这里处理完 Application 已经拥有了 BeanFactory 的功能，可以进行 bean 的提取等基础操作了
+			//2.创建一个新的 BeanFactory。
+			// 该方法会解析所有 Spring 配置文件，将所有 Spring 配置文件中的 bean 定义封装成 BeanDefinition，加载到 BeanFactory 中。
+			// “加载到 BeanFactory 中”的内容主要指的是以下3个缓存：
+			//		beanDefinitionNames缓存：所有被加载到 BeanFactory 中的 bean 的 beanName 集合。
+			//		beanDefinitionMap缓存：所有被加载到 BeanFactory 中的 bean 的 beanName 和 BeanDefinition 映射。
+			//		aliasMap缓存：所有被加载到 BeanFactory 中的 bean 的 beanName 和别名映射。
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
 			//3.在 BeanFactory 原有功能的基础上，添加多重新的功能。比如 SpEL 的支持、属性注册的支持、ApplicationContextAwareProcessor 处理器等功能
+			//配置 beanFactory 的标准上下文特征，例如上下文的 ClassLoader、后置处理器等。
+			// 这个方法会注册3个默认环境 bean：environment、systemProperties 和 systemEnvironment，
+			// 注册 2 个 bean 后置处理器：ApplicationContextAwareProcessor 和 ApplicationListenerDetector。
 			prepareBeanFactory(beanFactory);
 
 			try {
-				//4.留给用户自定义的
+				//4.允许子类对 BeanFactory 进行后续处理，默认实现为空，留给子类实现。
 				postProcessBeanFactory(beanFactory);
 
-				//5.实例化和调用所有 BeanFactoryPostProcessor（包括子类 BeanDefinitionRegistryPostProcessor）
+				//5.实例化和调用所有 BeanFactoryPostProcessor,包括子类 BeanDefinitionRegistryPostProcessor
+				// BeanDefinitionRegistryPostProcessor 比普通的 BeanFactoryPostProcessor 先被执行，用于用户的拓展
 				invokeBeanFactoryPostProcessors(beanFactory);
 
-				//6.注册拦截 Bean 创建的 Bean 处理器，这里只是注册，真正调用是在 getBean
+				//6.注册所有的 BeanPostProcessor，将所有实现了 BeanPostProcessor 接口的类加载到 BeanFactory 中。
+				//只是注册，没有调用。调用是在 bean 初始化的前后调用
 				registerBeanPostProcessors(beanFactory);
 
-				//7.为上下文初始化 Message 源，即国际化处理
+				//7.初始化 Message 源，即国际化处理
 				initMessageSource();
 
-				//8.初始化应用消息广播器，并放入 ApplicationEventMulticaster bean 中
-				//8、10 一个是消息广播器、一个是消息监听器，不要混淆呦
+				//8.初始化应用「消息广播器」 ApplicationEventMulticaster
 				initApplicationEventMulticaster();
 
 				//9.留给子类来处理其它的 Bean
 				onRefresh();
 
-				//10.将消息监听器绑定到消息广播器上
+				//10.将「消息监听器」绑定到消息广播器上
 				registerListeners();
 
-				//11.初始化剩下的单例（非惰性的）
+				//11.实例化所有剩余的非懒加载单例 bean
 				finishBeanFactoryInitialization(beanFactory);
 
-				//12.完成刷新过程，通知生命周期处理器 lifecycleProcessor 刷新过程，同时发出 ContextRefreshEvent 通知别人
+				//12.完成此上下文的刷新，主要是推送上下文刷新完毕事件（ContextRefreshedEvent ）到监听器
 				finishRefresh();
 			}
 
