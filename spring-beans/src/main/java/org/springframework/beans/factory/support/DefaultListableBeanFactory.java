@@ -726,18 +726,22 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			logger.debug("Pre-instantiating singletons in " + this);
 		}
 
-		// Iterate over a copy to allow for init methods which in turn register new bean definitions.
-		// While this may not be part of the regular factory bootstrap, it does otherwise work fine.
+		//1.创建 beanDefinitionNames 的副本 beanNames 用于后续的遍历，以允许 init 等方法注册新的 bean 定义
 		List<String> beanNames = new ArrayList<>(this.beanDefinitionNames);
 
-		// Trigger initialization of all non-lazy singleton beans...
+		//2.遍历 beanNames，触发所有非懒加载单例 bean 的初始化
 		for (String beanName : beanNames) {
+			//3.获取 beanName 对应的 MergedBeanDefinition
 			RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
+			//4.bd 对应的 Bean 实例：不是抽象类 && 是单例 && 不是懒加载
 			if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
+				//5.判断 beanName 对应的 bean 是否为 FactoryBean
 				if (isFactoryBean(beanName)) {
+					//5.1 通过 getBean(&beanName)拿到的是 FactoryBean 本身
 					Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
 					if (bean instanceof FactoryBean) {
 						FactoryBean<?> factory = (FactoryBean<?>) bean;
+						//5.2 判断这个 FactoryBean 是否希望急切的初始化
 						boolean isEagerInit;
 						if (System.getSecurityManager() != null && factory instanceof SmartFactoryBean) {
 							isEagerInit = AccessController.doPrivileged(
@@ -748,22 +752,24 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 							isEagerInit = (factory instanceof SmartFactoryBean &&
 									((SmartFactoryBean<?>) factory).isEagerInit());
 						}
+						//5.3 如果希望急切的初始化，则通过 beanName 获取 bean 实例
 						if (isEagerInit) {
 							getBean(beanName);
 						}
 					}
 				}
 				else {
+					//6.不是 FactoryBean，只是普通 Bean，通过 beanName 获取 bean 实例
 					getBean(beanName);
 				}
 			}
 		}
-
-		// Trigger post-initialization callback for all applicable beans...
+		//7.遍历 beanNames，触发所有 SmartInitializingSingleton 的后初始化回调:这是 Spring 给用户的一个拓展点，在所有非懒加载单例实例化结束后调用
 		for (String beanName : beanNames) {
 			Object singletonInstance = getSingleton(beanName);
 			if (singletonInstance instanceof SmartInitializingSingleton) {
 				SmartInitializingSingleton smartSingleton = (SmartInitializingSingleton) singletonInstance;
+				//7.1 触发 SmartInitializingSingleton 实现类的 afterSingletonsInstantiated 方法
 				if (System.getSecurityManager() != null) {
 					AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
 						smartSingleton.afterSingletonsInstantiated();
