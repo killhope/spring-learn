@@ -794,10 +794,10 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 
 		Assert.hasText(beanName, "Bean name must not be empty");
 		Assert.notNull(beanDefinition, "BeanDefinition must not be null");
-
+		//1.注册前最后的校验
 		if (beanDefinition instanceof AbstractBeanDefinition) {
 			try {
-				//校验 beanDefinition  1、methodOverrides 与工程方法不能同时共存 2、如果有 methodOverrides，必须有对应的方法
+				//校验 beanDefinition  1、methodOverrides 与工厂方法不能同时共存 2、如果有 methodOverrides，必须有对应的方法
 				((AbstractBeanDefinition) beanDefinition).validate();
 			}
 			catch (BeanDefinitionValidationException ex) {
@@ -805,11 +805,11 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 						"Validation of bean definition failed", ex);
 			}
 		}
-		//以前需要 synchronized 来访问 beanDefinitionMap，现在 beanDefinitionMap 为 ConcurrentHashMap，取消了 synchronized
+
 		BeanDefinition existingDefinition = this.beanDefinitionMap.get(beanName);
-		//已经注册 beanName 的情况
+		//2.缓存中已经有 beanName 的情况
 		if (existingDefinition != null) {
-			// beanName 已注册（上一个 if 判断的）并且该 bean 不允许被覆盖，抛出异常
+			//如果不允许相同beanName重新注册，则直接抛出异常
 			if (!isAllowBeanDefinitionOverriding()) {
 				throw new BeanDefinitionStoreException(beanDefinition.getResourceDescription(), beanName,
 						"Cannot register bean definition [" + beanDefinition + "] for bean '" + beanName +
@@ -837,18 +837,22 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 							"] with [" + beanDefinition + "]");
 				}
 			}
-			//注册 bean
+			//将本次传进来的 beanName 和 BeanDefinition 映射放入 beanDefinitionMap 缓存（以供后续创建 bean 时使用）
 			this.beanDefinitionMap.put(beanName, beanDefinition);
 		}
 		else {
+			//3.beanName 不存在于缓存中的情况
 			if (hasBeanCreationStarted()) {
 				// Cannot modify startup-time collection elements anymore (for stable iteration)
 				synchronized (this.beanDefinitionMap) {
+					//将本次传进来的 beanName 和 BeanDefinition 映射放入 beanDefinitionMap 缓存
 					this.beanDefinitionMap.put(beanName, beanDefinition);
+					//将本次传进来的 beanName 加入 beanDefinitionNames 缓存
 					List<String> updatedDefinitions = new ArrayList<>(this.beanDefinitionNames.size() + 1);
 					updatedDefinitions.addAll(this.beanDefinitionNames);
 					updatedDefinitions.add(beanName);
 					this.beanDefinitionNames = updatedDefinitions;
+					//将 beanName 从 manualSingletonNames 缓存移除
 					if (this.manualSingletonNames.contains(beanName)) {
 						Set<String> updatedSingletons = new LinkedHashSet<>(this.manualSingletonNames);
 						updatedSingletons.remove(beanName);
@@ -857,6 +861,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 				}
 			}
 			else {
+				//3.2 bean创建阶段还未开始，先放入到缓存中
 				// Still in startup registration phase
 				this.beanDefinitionMap.put(beanName, beanDefinition);
 				this.beanDefinitionNames.add(beanName);
@@ -865,6 +870,8 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 			this.frozenBeanDefinitionNames = null;
 		}
 
+		//4.如果 beanName 重复，并且该 beanName 已经存在单例对象，则会调用 resetBeanDefinition 方法。
+		//实际开发过程中，基本不会出现 beanName 相同的情况，因此基本不会走到该方法
 		if (existingDefinition != null || containsSingleton(beanName)) {
 			resetBeanDefinition(beanName);
 		}
@@ -909,14 +916,17 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	 */
 	protected void resetBeanDefinition(String beanName) {
 		// Remove the merged bean definition for the given bean, if already created.
+		//1.删除 beanName 的 mergedBeanDefinitions 缓存（如果有的话）
 		clearMergedBeanDefinition(beanName);
 
 		// Remove corresponding bean from singleton cache, if any. Shouldn't usually
 		// be necessary, rather just meant for overriding a context's default beans
 		// (e.g. the default StaticMessageSource in a StaticApplicationContext).
+		//2.从单例缓存中删除该 beanName 对应的 bean（如果有的话）
 		destroySingleton(beanName);
 
 		// Reset all bean definitions that have the given bean as parent (recursively).
+		//3.重置 beanName 的所有子 Bean 定义（递归）
 		for (String bdName : this.beanDefinitionNames) {
 			if (!beanName.equals(bdName)) {
 				BeanDefinition bd = this.beanDefinitionMap.get(bdName);

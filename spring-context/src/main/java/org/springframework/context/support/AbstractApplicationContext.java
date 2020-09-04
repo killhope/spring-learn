@@ -313,6 +313,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	@Override
 	public ConfigurableEnvironment getEnvironment() {
 		if (this.environment == null) {
+			//创建环境属性
 			this.environment = createEnvironment();
 		}
 		return this.environment;
@@ -324,6 +325,8 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * a custom {@link ConfigurableEnvironment} implementation.
 	 */
 	protected ConfigurableEnvironment createEnvironment() {
+		//这是 AbstractApplicationContext 的默认实现。
+		//我们拿到的应用上下文具体实现类是 XmlWebApplicationContext，从 XmlWebApplicationContext 这里面找。
 		return new StandardEnvironment();
 	}
 
@@ -518,7 +521,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	public void refresh() throws BeansException, IllegalStateException {
 		//加锁
 		synchronized (this.startupShutdownMonitor) {
-			//1.准备工作，比如对系统属性或者环境变量进行验证
+			//1.准备工作，对系统属性、环境变量进行验证，用户也可以自定义操作
 			prepareRefresh();
 			//2.创建一个新的 BeanFactory。
 			// 该方法会解析所有 Spring 配置文件，将所有 Spring 配置文件中的 bean 定义封装成 BeanDefinition，加载到 BeanFactory 中。
@@ -602,8 +605,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		if (logger.isInfoEnabled()) {
 			logger.info("Refreshing " + this);
 		}
-		//1、2 看似没什么逻辑，其实是给用户下放最大的权利，用户可以根据自己的需求拓展
-		//1.留给子类覆盖
+		//1.留给开发者的拓展点
 		initPropertySources();
 
 		//2.验证需要的属性文件是否都已放入环境中
@@ -640,9 +642,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * @see #getBeanFactory()
 	 */
 	protected ConfigurableListableBeanFactory obtainFreshBeanFactory() {
-		//初始化 BeanFactory，并进行 XML 解析
+		//1.初始化 BeanFactory，并进行 XML 解析
 		refreshBeanFactory();
-		//得到 BeanFactory
+		//2.得到初始化好的 BeanFactory
 		ConfigurableListableBeanFactory beanFactory = getBeanFactory();
 		if (logger.isDebugEnabled()) {
 			logger.debug("Bean factory for " + getDisplayName() + ": " + beanFactory);

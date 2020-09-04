@@ -140,6 +140,8 @@ public class ContextLoader {
 		// by application developers.
 		try {
 			//1.根据 DEFAULT_STRATEGIES_PATH（ContextLoader.properties） 和 ContextLoader.class 构建 ClassPathResource
+			// 注：ClassPathResource 的 path 属性可以是绝对路径也可以是相对路径，在这边为相对路径（相对于加载资源的类 ContextLoader），
+			// 指向的绝对路径为：org.springframework.web.context.ContextLoader.properties，resource 目录下有 ContextLoader.properties
 			ClassPathResource resource = new ClassPathResource(DEFAULT_STRATEGIES_PATH, ContextLoader.class);
 			// 2.加载resource的属性
 			defaultStrategies = PropertiesLoaderUtils.loadProperties(resource);
@@ -278,7 +280,7 @@ public class ContextLoader {
 			// Store context in local instance variable, to guarantee that
 			// it is available on ServletContext shutdown.
 			if (this.context == null) {
-				//2.创建应用上下文（ WebApplicationContext）并保存到 context 属性
+				//2.创建应用上下文（ 默认的是 XmlWebApplicationContext）并保存到 context 属性 注：建了个光杆司令，还没有配置相关信息呢
 				this.context = createWebApplicationContext(servletContext);
 			}
 			if (this.context instanceof ConfigurableWebApplicationContext) {
@@ -292,7 +294,7 @@ public class ContextLoader {
 						ApplicationContext parent = loadParentContext(servletContext);
 						cwac.setParent(parent);
 					}
-					// 3.配置和刷新web应用上下文
+					// 3.配置、刷新上下文 重点，IoC 的设置基本上都在里面的
 					configureAndRefreshWebApplicationContext(cwac, servletContext);
 				}
 			}
@@ -343,9 +345,9 @@ public class ContextLoader {
 	 * @see ConfigurableWebApplicationContext
 	 */
 	protected WebApplicationContext createWebApplicationContext(ServletContext sc) {
-		//1.确定要创建的应用上下文的 Class
+		//1.确定要创建的应用上下文的 Class，如果 web.xml 配置了 contextClass 就用配置的，没配置用默认的 XmlWebApplicationContext
 		Class<?> contextClass = determineContextClass(sc);
-		//2.校验 contextClass 是否为 ConfigurableWebApplicationContext 或其子类、子接口
+		//2.contextClass 必须为 ConfigurableWebApplicationContext 的子类或子接口
 		if (!ConfigurableWebApplicationContext.class.isAssignableFrom(contextClass)) {
 			throw new ApplicationContextException("Custom context class [" + contextClass.getName() +
 					"] is not of type [" + ConfigurableWebApplicationContext.class.getName() + "]");
@@ -363,11 +365,11 @@ public class ContextLoader {
 	 * @see org.springframework.web.context.support.XmlWebApplicationContext
 	 */
 	protected Class<?> determineContextClass(ServletContext servletContext) {
-		//1.从 servletContext 中解析初始化参数 contextClass (web.xml可以配置该参数)
+		//1.从 servletContext 中解析初始化参数 contextClass (web.xml可配)
 		String contextClassName = servletContext.getInitParameter(CONTEXT_CLASS_PARAM);
 		if (contextClassName != null) {
 			try {
-				//2.contextClassName 不为空，则使用工具类构建出 contextClassName 的实例
+				//2.不为空，使用工具类构建出 contextClassName 的实例
 				return ClassUtils.forName(contextClassName, ClassUtils.getDefaultClassLoader());
 			}
 			catch (ClassNotFoundException ex) {
@@ -376,7 +378,7 @@ public class ContextLoader {
 			}
 		}
 		else {
-			//3.如果没有配置 contextClass 参数，则从 defaultStrategies 缓存中拿到默认的 WerApplicationContext 对应的 ClassName，
+			//3.web.xml 没有配置 contextClass 参数，从 defaultStrategies 中获取 ClassName（defaultStrategies 初始化 ContextLoader.java 的时候就初始化过哦，还记得吗）
 			// 即：org.springframework.web.context.support.XmlWebApplicationContext
 			contextClassName = defaultStrategies.getProperty(WebApplicationContext.class.getName());
 			try {
@@ -406,10 +408,17 @@ public class ContextLoader {
 		}
 		//2.为应用上下文设置 servletContext
 		wac.setServletContext(sc);
-		//3.从 servletContext 中解析初始化参数 contextConfigLocation：存放的 Spring 配置文件的路径
+		/* web.xml 文件会配置在哪读取 Spring 的 xml
+		<context-param>
+			<param-name>contextConfigLocation</param-name>
+			<param-value>
+					classpath*:config/spring/appcontext-*.xml
+					</param-value>
+		</context-param>
+		*/
 		String configLocationParam = sc.getInitParameter(CONFIG_LOCATION_PARAM);
 		if (configLocationParam != null) {
-			//4.设置 wac 的 configLocations 属性值为 configLocationParam：通过分割符（,;\t\n）分割成String数组，然后赋值
+			//3.保存存放 Spring 配置文件的路径，这里面初始化了各种需要的属性，有数据的就放数据，没数据的就随便放个东西，在以后的方法填充，比如说4 里就填充了 servletContextInitParams
 			wac.setConfigLocation(configLocationParam);
 		}
 
@@ -418,10 +427,10 @@ public class ContextLoader {
 		// use in any post-processing or initialization that occurs below prior to #refresh
 		ConfigurableEnvironment env = wac.getEnvironment();
 		if (env instanceof ConfigurableWebEnvironment) {
-			//5.初始化属性源(主要是将 servletContextInitParams 的占位类替换成 sc)
+			//4.初始化 servlet 上下文初始化参数：3 中放了个空的 servletContextInitParams，这里把真正的数据放上
 			((ConfigurableWebEnvironment) env).initPropertySources(sc, null);
 		}
-		//6.自定义上下文
+		//5.自定义上下文,Spring 给开发者的一个拓展点，可以通过创建 ApplicationContextInitializer 接口的实现类，来进行自定义操作
 		customizeContext(sc, wac);
 		wac.refresh();
 	}
@@ -444,9 +453,10 @@ public class ContextLoader {
 	 * @see ApplicationContextInitializer#initialize(ConfigurableApplicationContext)
 	 */
 	protected void customizeContext(ServletContext sc, ConfigurableWebApplicationContext wac) {
+		//1.确定应用上下文的初始化类
 		List<Class<ApplicationContextInitializer<ConfigurableApplicationContext>>> initializerClasses =
 				determineContextInitializerClasses(sc);
-
+		//2.遍历处理 initializerClasses
 		for (Class<ApplicationContextInitializer<ConfigurableApplicationContext>> initializerClass : initializerClasses) {
 			Class<?> initializerContextClass =
 					GenericTypeResolver.resolveTypeArgument(initializerClass, ApplicationContextInitializer.class);
@@ -457,10 +467,11 @@ public class ContextLoader {
 						"context loader: [%s]", initializerClass.getName(), initializerContextClass.getName(),
 						wac.getClass().getName()));
 			}
+			//3.实例化 initializerClass, 并添加到 contextInitializers 中
 			this.contextInitializers.add(BeanUtils.instantiateClass(initializerClass));
 		}
-
 		AnnotationAwareOrderComparator.sort(this.contextInitializers);
+		//4.遍历实例化后的 contextInitializers,调用 initialize 方法，进行自定义初始化wac操作
 		for (ApplicationContextInitializer<ConfigurableApplicationContext> initializer : this.contextInitializers) {
 			initializer.initialize(wac);
 		}
@@ -477,14 +488,14 @@ public class ContextLoader {
 
 		List<Class<ApplicationContextInitializer<ConfigurableApplicationContext>>> classes =
 				new ArrayList<>();
-
+		//1.从 servletContext 中解析初始化参数 globalInitializerClasses(可在web.xml中配置)
 		String globalClassNames = servletContext.getInitParameter(GLOBAL_INITIALIZER_CLASSES_PARAM);
 		if (globalClassNames != null) {
 			for (String className : StringUtils.tokenizeToStringArray(globalClassNames, INIT_PARAM_DELIMITERS)) {
 				classes.add(loadInitializerClass(className));
 			}
 		}
-
+		//2.解析初始化参数 contextInitializerClasses(可在web.xml中配置)
 		String localClassNames = servletContext.getInitParameter(CONTEXT_INITIALIZER_CLASSES_PARAM);
 		if (localClassNames != null) {
 			for (String className : StringUtils.tokenizeToStringArray(localClassNames, INIT_PARAM_DELIMITERS)) {

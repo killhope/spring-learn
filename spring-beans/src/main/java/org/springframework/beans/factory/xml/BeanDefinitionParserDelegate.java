@@ -412,9 +412,8 @@ public class BeanDefinitionParserDelegate {
 	 */
 	@Nullable
 	public BeanDefinitionHolder parseBeanDefinitionElement(Element ele, @Nullable BeanDefinition containingBean) {
-		//获取 id
+		//1.解析 id、name 属性
 		String id = ele.getAttribute(ID_ATTRIBUTE);
-		//获取别名 aliases
 		String nameAttr = ele.getAttribute(NAME_ATTRIBUTE);
 
 		List<String> aliases = new ArrayList<>();
@@ -422,7 +421,7 @@ public class BeanDefinitionParserDelegate {
 			String[] nameArr = StringUtils.tokenizeToStringArray(nameAttr, MULTI_VALUE_ATTRIBUTE_DELIMITERS);
 			aliases.addAll(Arrays.asList(nameArr));
 		}
-		//根据 id 和别名获取 beanName，此时 beanName 可能还是会为空
+		//beanName 默认取 id ，id 为空，取别名第一个，如果还为空，先放着，后面还有处理，会用默认的命名方式
 		String beanName = id;
 		if (!StringUtils.hasText(beanName) && !aliases.isEmpty()) {
 			beanName = aliases.remove(0);
@@ -433,19 +432,22 @@ public class BeanDefinitionParserDelegate {
 		}
 
 		if (containingBean == null) {
+			//检查 beanName 和 aliases 是否在同一个 <beans> 下已经存在
 			checkNameUniqueness(beanName, aliases, ele);
 		}
-		//解析除了 id，name 外的，spring 定义的其它标签
+		//2.进一步解析 bean 的其他所有属性并统一封装至 GenericBeanDefinition 类型实例中
 		AbstractBeanDefinition beanDefinition = parseBeanDefinitionElement(ele, beanName, containingBean);
 		if (beanDefinition != null) {
-			//如果 beanName 还是为空，系统自动生成 beanName
+			//3.如果此时 beanName 还是为空，系统来生成 beanName
 			if (!StringUtils.hasText(beanName)) {
 				try {
+					//如果 bean 定义存在，但是 beanName 为空，则用Spring默认的生成规则为当前bean生成beanName
 					if (containingBean != null) {
 						beanName = BeanDefinitionReaderUtils.generateBeanName(
 								beanDefinition, this.readerContext.getRegistry(), true);
 					}
 					else {
+						//Spring 提供的生成规则生成 beanName，例如：com.joonwhee.open.demo.service.impl.DemoServiceImpl#0
 						beanName = this.readerContext.generateBeanName(beanDefinition);
 						// Register an alias for the plain bean class name, if still possible,
 						// if the generator returned the class name plus a suffix.
@@ -454,6 +456,7 @@ public class BeanDefinitionParserDelegate {
 						if (beanClassName != null &&
 								beanName.startsWith(beanClassName) && beanName.length() > beanClassName.length() &&
 								!this.readerContext.getRegistry().isBeanNameInUse(beanClassName)) {
+							//如果 Spring 默认的生成规则生成的 beanName 为:类名加后缀，则将类名注册为别名
 							aliases.add(beanClassName);
 						}
 					}
@@ -468,7 +471,7 @@ public class BeanDefinitionParserDelegate {
 				}
 			}
 			String[] aliasesArray = StringUtils.toStringArray(aliases);
-			//封装 BeanDefinitionHolder
+			//4.将 BeanDefinition、beanName、别名数组封装成BeanDefinitionHolder
 			return new BeanDefinitionHolder(beanDefinition, beanName, aliasesArray);
 		}
 
@@ -505,34 +508,34 @@ public class BeanDefinitionParserDelegate {
 			Element ele, String beanName, @Nullable BeanDefinition containingBean) {
 
 		this.parseState.push(new BeanEntry(beanName));
-		//解析 class 属性
+		//1.解析 class、parent 属性：提前解析这两个属性是因为，2 会用到，否则，会放到 3 中同一解析
 		String className = null;
 		if (ele.hasAttribute(CLASS_ATTRIBUTE)) {
 			className = ele.getAttribute(CLASS_ATTRIBUTE).trim();
 		}
-		//解析 parent 属性
 		String parent = null;
 		if (ele.hasAttribute(PARENT_ATTRIBUTE)) {
 			parent = ele.getAttribute(PARENT_ATTRIBUTE);
 		}
 
 		try {
+			//2.创建用于承载属性的 AbstractBeanDefinition 类型的 GenericBeanDefinition
 			AbstractBeanDefinition bd = createBeanDefinition(className, parent);
-			//解析写死的一些标签 如：scope,singleton,lazy-init,autowire 等等
+			//3.解析 bean 的各种属性，如：scope,singleton,lazy-init,autowire 等等
 			parseBeanDefinitionAttributes(ele, beanName, containingBean, bd);
 			//解析 description 信息
 			bd.setDescription(DomUtils.getChildElementValueByTagName(ele, DESCRIPTION_ELEMENT));
-			//解析 Meta 元数据
+			//解析 Meta 元数据(基本不用, 不深入介绍)
 			parseMetaElements(ele, bd);
-			//解析 Lookup-method 属性
+			//解析 Lookup-method 属性(基本不用, 不深入介绍)
 			parseLookupOverrideSubElements(ele, bd.getMethodOverrides());
-			//解析 Replace-method 属性
+			//解析 Replace-method 属性(基本不用, 不深入介绍)
 			parseReplacedMethodSubElements(ele, bd.getMethodOverrides());
-			//解析构造方法的参数
+			//4.解析构造方法的参数
 			parseConstructorArgElements(ele, bd);
-			//解析 Property 属性
+			//5.解析 Property 属性
 			parsePropertyElements(ele, bd);
-			//解析 Qualifier 属性
+			//解析 Qualifier 子节点(基本不用, 不深入介绍)
 			parseQualifierElements(ele, bd);
 
 			bd.setResource(this.readerContext.getResource());
@@ -702,10 +705,12 @@ public class BeanDefinitionParserDelegate {
 	 * Parse constructor-arg sub-elements of the given bean element.
 	 */
 	public void parseConstructorArgElements(Element beanEle, BeanDefinition bd) {
+		//拿到 beanEle 节点的所有子节点
 		NodeList nl = beanEle.getChildNodes();
 		for (int i = 0; i < nl.getLength(); i++) {
 			Node node = nl.item(i);
 			if (isCandidateElement(node) && nodeNameEquals(node, CONSTRUCTOR_ARG_ELEMENT)) {
+				//解析 constructor-arg
 				parseConstructorArgElement((Element) node, bd);
 			}
 		}
@@ -789,12 +794,13 @@ public class BeanDefinitionParserDelegate {
 	 * Parse a constructor-arg element.
 	 */
 	public void parseConstructorArgElement(Element ele, BeanDefinition bd) {
-		//获取 index 参数
+		//1.提取基础属性 index、type、name 属性值
 		String indexAttr = ele.getAttribute(INDEX_ATTRIBUTE);
 		String typeAttr = ele.getAttribute(TYPE_ATTRIBUTE);
 		String nameAttr = ele.getAttribute(NAME_ATTRIBUTE);
-		//有、无 index 属性，两种处理方式，前者将封装好的对象放到 BeanDefinition 的 ConstructorArgumentValues 的 indexedArgumentValues，
-		//后者方法 genericArgumentValues
+		//2.根据是否有 index 属性，将封装的对象存到不同的地方
+		// 有 index ，放到 BeanDefinition 的 ConstructorArgumentValues 的 indexedArgumentValues，
+		// 没有 index，放到 BeanDefinition 的 ConstructorArgumentValues 的 genericArgumentValues
 		if (StringUtils.hasLength(indexAttr)) {
 			try {
 				int index = Integer.parseInt(indexAttr);
@@ -853,6 +859,7 @@ public class BeanDefinitionParserDelegate {
 	 * Parse a property element.
 	 */
 	public void parsePropertyElement(Element ele, BeanDefinition bd) {
+		//1.拿到 name 属性
 		String propertyName = ele.getAttribute(NAME_ATTRIBUTE);
 		if (!StringUtils.hasLength(propertyName)) {
 			error("Tag 'property' must have a 'name' attribute", ele);
@@ -860,6 +867,7 @@ public class BeanDefinitionParserDelegate {
 		}
 		this.parseState.push(new PropertyEntry(propertyName));
 		try {
+			//2.校验在相同 bean 节点下，是否存在相同的 name 属性，如果存在则抛出异常
 			if (bd.getPropertyValues().contains(propertyName)) {
 				error("Multiple 'property' definitions for property '" + propertyName + "'", ele);
 				return;
@@ -868,6 +876,7 @@ public class BeanDefinitionParserDelegate {
 			PropertyValue pv = new PropertyValue(propertyName, val);
 			parseMetaElements(ele, pv);
 			pv.setSource(extractSource(ele));
+			//3.将解析出来的 PropertyValue ，添加到 BeanDefinition 的 propertyValues 属性中(上面的重复校验用到)
 			bd.getPropertyValues().addPropertyValue(pv);
 		}
 		finally {

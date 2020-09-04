@@ -78,7 +78,7 @@ public abstract class AbstractRefreshableConfigApplicationContext extends Abstra
 			Assert.noNullElements(locations, "Config locations must not be null");
 			this.configLocations = new String[locations.length];
 			for (int i = 0; i < locations.length; i++) {
-				// 对于 ${var} 这类字符，resolvePath 会从系统变量中搜索幷替换
+				// 对于 ${path} 这类字符，resolvePath 会从系统变量中搜索幷替换
 				this.configLocations[i] = resolvePath(locations[i]).trim();
 			}
 		}
@@ -99,6 +99,7 @@ public abstract class AbstractRefreshableConfigApplicationContext extends Abstra
 	 */
 	@Nullable
 	protected String[] getConfigLocations() {
+		//如果 configLocations 在web.xml 配置了，ContextLoader 就已经解析加载了；如果没配，获取默认的路径 /WEB-INF/applicationContext.xml
 		return (this.configLocations != null ? this.configLocations : getDefaultConfigLocations());
 	}
 
@@ -123,6 +124,8 @@ public abstract class AbstractRefreshableConfigApplicationContext extends Abstra
 	 * @see org.springframework.core.env.Environment#resolveRequiredPlaceholders(String)
 	 */
 	protected String resolvePath(String path) {
+		// 1.getEnvironment：获取环境属性
+		// 2.resolveRequiredPlaceholders: 解析给定路径，必要时用相应的环境属性值替换占位符，例如${path}
 		return getEnvironment().resolveRequiredPlaceholders(path);
 	}
 

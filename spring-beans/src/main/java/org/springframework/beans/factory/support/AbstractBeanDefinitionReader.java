@@ -210,16 +210,19 @@ public abstract class AbstractBeanDefinitionReader implements EnvironmentCapable
 	 * @see #loadBeanDefinitions(org.springframework.core.io.Resource[])
 	 */
 	public int loadBeanDefinitions(String location, @Nullable Set<Resource> actualResources) throws BeanDefinitionStoreException {
+		//1.获取 resourceLoader，这边为 XmlWebApplicationContext
 		ResourceLoader resourceLoader = getResourceLoader();
 		if (resourceLoader == null) {
 			throw new BeanDefinitionStoreException(
 					"Cannot import bean definitions from location [" + location + "]: no ResourceLoader available");
 		}
-
+		//2.如果 resourceLoader 是 ResourcePatternResolver 实例
 		if (resourceLoader instanceof ResourcePatternResolver) {
 			// Resource pattern matching available.
 			try {
+				//2.1 根据路径拿到该路径下所有符合的配置文件，并封装成 Resource
 				Resource[] resources = ((ResourcePatternResolver) resourceLoader).getResources(location);
+				//2.2 根据 Resource，加载 BeanDefinition
 				int loadCount = loadBeanDefinitions(resources);
 				if (actualResources != null) {
 					for (Resource resource : resources) {
@@ -237,8 +240,9 @@ public abstract class AbstractBeanDefinitionReader implements EnvironmentCapable
 			}
 		}
 		else {
-			// Can only load single resources by absolute URL.
+			//3.只能通过绝对 URL 加载单个资源
 			Resource resource = resourceLoader.getResource(location);
+			//3.1 根据 Resource，加载 BeanDefinition
 			int loadCount = loadBeanDefinitions(resource);
 			if (actualResources != null) {
 				actualResources.add(resource);

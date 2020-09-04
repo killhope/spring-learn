@@ -43,7 +43,7 @@ import org.springframework.web.context.ConfigurableWebEnvironment;
  * @see StandardEnvironment
  */
 public class StandardServletEnvironment extends StandardEnvironment implements ConfigurableWebEnvironment {
-
+	//new StandardServletEnvironment()时，必须先初始化父类。StandardEnvironment 的父类是 AbstractEnvironment，因此，先初始化 AbstractEnvironment。
 	/** Servlet context init parameters property source name: {@value} */
 	public static final String SERVLET_CONTEXT_PROPERTY_SOURCE_NAME = "servletContextInitParams";
 
@@ -82,11 +82,15 @@ public class StandardServletEnvironment extends StandardEnvironment implements C
 	 */
 	@Override
 	protected void customizePropertySources(MutablePropertySources propertySources) {
+		//1.添加 servletConfigInitParams 属性源(作为占位符, 之后会被替换)
 		propertySources.addLast(new StubPropertySource(SERVLET_CONFIG_PROPERTY_SOURCE_NAME));
+		//2.添加 servletContextInitParams 属性源(作为占位符, 之后会被替换)
 		propertySources.addLast(new StubPropertySource(SERVLET_CONTEXT_PROPERTY_SOURCE_NAME));
 		if (JndiLocatorDelegate.isDefaultJndiEnvironmentAvailable()) {
+			//3.添加 jndiProperties 属性源
 			propertySources.addLast(new JndiPropertySource(JNDI_PROPERTY_SOURCE_NAME));
 		}
+		//4.调用父类中的 customizePropertySources 方法
 		super.customizePropertySources(propertySources);
 	}
 
