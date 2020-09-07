@@ -732,6 +732,12 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		//2.遍历 beanNames，触发所有非懒加载单例 bean 的初始化
 		for (String beanName : beanNames) {
 			//3.获取 beanName 对应的 MergedBeanDefinition
+			//之所以称之为 “合并的”，是因为存在 “子定义” 和 “父定义” 的情况。对于一个 bean 定义来说，可能存在以下几种情况：
+			//该 BeanDefinition 存在 “父定义”：首先使用 “父定义” 的参数构建一个 RootBeanDefinition，然后再使用该 BeanDefinition 的参数来进行覆盖。
+			//该 BeanDefinition 不存在 “父定义”，并且该 BeanDefinition 的类型是 RootBeanDefinition：直接返回该 RootBeanDefinition 的一个克隆。
+			//该 BeanDefinition 不存在 “父定义”，但是该 BeanDefinition 的类型不是 RootBeanDefinition：使用该 BeanDefinition 的参数构建一个 RootBeanDefinition。
+			//之所以区分出2和3，是因为通常 BeanDefinition 在之前加载到 BeanFactory 中的时候，通常是被封装成 GenericBeanDefinition 或 ScannedGenericBeanDefinition，但是从这边之后 bean 的后续流程处理都是针对 RootBeanDefinition，因此在这边会统一将 BeanDefinition 转换成 RootBeanDefinition。
+			//在我们日常使用的过程中，通常会是上面的第3种情况。如果我们使用 XML 配置来注册 bean，则该 bean 定义会被封装成：GenericBeanDefinition；如果我们使用注解的方式来注册 bean，也就是<context:component-scan /> + @Compoment，则该 bean 定义会被封装成 ScannedGenericBeanDefinition。
 			RootBeanDefinition bd = getMergedLocalBeanDefinition(beanName);
 			//4.bd 对应的 Bean 实例：不是抽象类 && 是单例 && 不是懒加载
 			if (!bd.isAbstract() && bd.isSingleton() && !bd.isLazyInit()) {
@@ -752,8 +758,8 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 							isEagerInit = (factory instanceof SmartFactoryBean &&
 									((SmartFactoryBean<?>) factory).isEagerInit());
 						}
-						//5.3 如果希望急切的初始化，则通过 beanName 获取 bean 实例
 						if (isEagerInit) {
+							//5.3 如果希望急切的初始化，则通过 beanName 获取 bean 实例
 							getBean(beanName);
 						}
 					}

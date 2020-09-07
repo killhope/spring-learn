@@ -453,7 +453,7 @@ public class ContextLoader {
 	 * @see ApplicationContextInitializer#initialize(ConfigurableApplicationContext)
 	 */
 	protected void customizeContext(ServletContext sc, ConfigurableWebApplicationContext wac) {
-		//1.确定应用上下文的初始化类
+		//1.确定应用上下文的初始化类： initializerClasses 是用户自定义的初始化类，实现了 ApplicationContextInitializer 接口，自定义逻辑写在 initialize 方法中
 		List<Class<ApplicationContextInitializer<ConfigurableApplicationContext>>> initializerClasses =
 				determineContextInitializerClasses(sc);
 		//2.遍历处理 initializerClasses

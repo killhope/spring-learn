@@ -228,7 +228,9 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 
 	@Override
 	public void postProcessMergedBeanDefinition(RootBeanDefinition beanDefinition, Class<?> beanType, String beanName) {
+		//1.在指定 Bean 中查找使用 @Autowire 注解的元数据
 		InjectionMetadata metadata = findAutowiringMetadata(beanName, beanType, null);
+		//2.检查元数据中的注解信息
 		metadata.checkConfigMembers(beanDefinition);
 	}
 
@@ -404,9 +406,12 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 
 	private InjectionMetadata findAutowiringMetadata(String beanName, Class<?> clazz, @Nullable PropertyValues pvs) {
 		// Fall back to class name as cache key, for backwards compatibility with custom callers.
+		//1.设置 cacheKey 的值（beanName 或者 className）
 		String cacheKey = (StringUtils.hasLength(beanName) ? beanName : clazz.getName());
 		// Quick check on the concurrent map first, with minimal locking.
+		//2.检查 beanName 对应的 InjectionMetadata 是否已经存在于缓存中
 		InjectionMetadata metadata = this.injectionMetadataCache.get(cacheKey);
+		//3.检查 InjectionMetadata 是否需要刷新（为空或者 class 变了）
 		if (InjectionMetadata.needsRefresh(metadata, clazz)) {
 			synchronized (this.injectionMetadataCache) {
 				metadata = this.injectionMetadataCache.get(cacheKey);
