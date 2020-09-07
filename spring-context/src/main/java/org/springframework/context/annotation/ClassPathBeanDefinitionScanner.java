@@ -163,6 +163,7 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 		this.registry = registry;
 
 		if (useDefaultFilters) {
+			// 1.注册默认的filter
 			registerDefaultFilters();
 		}
 		setEnvironment(environment);
@@ -271,23 +272,34 @@ public class ClassPathBeanDefinitionScanner extends ClassPathScanningCandidateCo
 	protected Set<BeanDefinitionHolder> doScan(String... basePackages) {
 		Assert.notEmpty(basePackages, "At least one base package must be specified");
 		Set<BeanDefinitionHolder> beanDefinitions = new LinkedHashSet<>();
+		//1.遍历 basePackages
 		for (String basePackage : basePackages) {
+			//2.扫描 basePackage，将符合要求的 bean 定义全部找出来（这边符合要求最常见的就是使用 Component 注解）
 			Set<BeanDefinition> candidates = findCandidateComponents(basePackage);
+			//3.遍历所有候选的 bean 定义
 			for (BeanDefinition candidate : candidates) {
+				//4.解析 @Scope 注解, 包括 scopeName(默认为 singleton，常见的还有 prototype), 和 proxyMode(默认不使用代理, 可选接口代理/类代理)
 				ScopeMetadata scopeMetadata = this.scopeMetadataResolver.resolveScopeMetadata(candidate);
 				candidate.setScope(scopeMetadata.getScopeName());
+				//5.使用 beanName 生成器来生成 beanName
 				String beanName = this.beanNameGenerator.generateBeanName(candidate, this.registry);
 				if (candidate instanceof AbstractBeanDefinition) {
+					//6.进一步处理 BeanDefinition 对象，比如: 此 bean 是否可以自动装配到其他 bean 中
 					postProcessBeanDefinition((AbstractBeanDefinition) candidate, beanName);
 				}
 				if (candidate instanceof AnnotatedBeanDefinition) {
+					//7.处理定义在目标类上的通用注解，包括 @Lazy, @Primary, @DependsOn, @Role, @Description
 					AnnotationConfigUtils.processCommonDefinitionAnnotations((AnnotatedBeanDefinition) candidate);
 				}
+				//8.检查 beanName 是否已经注册过，如果注册过，检查是否兼容
 				if (checkCandidate(beanName, candidate)) {
+					//9.将当前遍历 bean 的 BeanDefinition 和 beanName 封装成 BeanDefinitionHolde
 					BeanDefinitionHolder definitionHolder = new BeanDefinitionHolder(candidate, beanName);
+					//10.根据 proxyMode 的值(步骤4中解析), 选择是否创建作用域代理
 					definitionHolder =
 							AnnotationConfigUtils.applyScopedProxyMode(scopeMetadata, definitionHolder, this.registry);
 					beanDefinitions.add(definitionHolder);
+					//11.注册 BeanDefinition（注册到 beanDefinitionMap、beanDefinitionNames、aliasMap 缓存）
 					registerBeanDefinition(definitionHolder, this.registry);
 				}
 			}

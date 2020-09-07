@@ -1226,11 +1226,14 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 	@Nullable
 	protected Constructor<?>[] determineConstructorsFromBeanPostProcessors(@Nullable Class<?> beanClass, String beanName)
 			throws BeansException {
-
+		//1.遍历所有的 BeanPostProcessor
 		if (beanClass != null && hasInstantiationAwareBeanPostProcessors()) {
 			for (BeanPostProcessor bp : getBeanPostProcessors()) {
 				if (bp instanceof SmartInstantiationAwareBeanPostProcessor) {
 					SmartInstantiationAwareBeanPostProcessor ibp = (SmartInstantiationAwareBeanPostProcessor) bp;
+					//2.调用 SmartInstantiationAwareBeanPostProcessor 的 determineCandidateConstructors 方法，
+					// 该方法可以返回要用于 beanClass 的候选构造函数
+					// 例如：使用@Autowire 注解修饰构造函数，则该构造函数在这边会被 AutowiredAnnotationBeanPostProcessor 找到
 					Constructor<?>[] ctors = ibp.determineCandidateConstructors(beanClass, beanName);
 					if (ctors != null) {
 						return ctors;

@@ -203,9 +203,11 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	 */
 	@SuppressWarnings("unchecked")
 	protected void registerDefaultFilters() {
+		//1.添加 @Component 注解 Filter 到 includeFilters 中
 		this.includeFilters.add(new AnnotationTypeFilter(Component.class));
 		ClassLoader cl = ClassPathScanningCandidateComponentProvider.class.getClassLoader();
 		try {
+			//2.添加 @ManagedBean 注解 Filter 到 includeFilters 中
 			this.includeFilters.add(new AnnotationTypeFilter(
 					((Class<? extends Annotation>) ClassUtils.forName("javax.annotation.ManagedBean", cl)), false));
 			logger.debug("JSR-250 'javax.annotation.ManagedBean' found and supported for component scanning");
@@ -214,6 +216,7 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 			// JSR-250 1.1 API (as included in Java EE 6) not available - simply skip.
 		}
 		try {
+			//3.添加 @Named 注解 Filter 到 includeFilters 中，这边会抛 ClassNotFoundException
 			this.includeFilters.add(new AnnotationTypeFilter(
 					((Class<? extends Annotation>) ClassUtils.forName("javax.inject.Named", cl)), false));
 			logger.debug("JSR-330 'javax.inject.Named' annotation found and supported for component scanning");
@@ -415,25 +418,32 @@ public class ClassPathScanningCandidateComponentProvider implements EnvironmentC
 	private Set<BeanDefinition> scanCandidateComponents(String basePackage) {
 		Set<BeanDefinition> candidates = new LinkedHashSet<>();
 		try {
+			// 1.根据我们配置的包名，组装成要扫描的通配包路径，例如：com.joonwhee.open 会被组装成: classpath*:com/joonwhee/open/**/*.class
 			String packageSearchPath = ResourcePatternResolver.CLASSPATH_ALL_URL_PREFIX +
 					resolveBasePackage(basePackage) + '/' + this.resourcePattern;
+			// 2.根据通配包路径匹配拿到所有匹配的类资源（本项目依赖的 jar，如果路径也符合，则会一起扫描进来）
 			Resource[] resources = getResourcePatternResolver().getResources(packageSearchPath);
 			boolean traceEnabled = logger.isTraceEnabled();
 			boolean debugEnabled = logger.isDebugEnabled();
+			// 3.遍历所有匹配的类资源
 			for (Resource resource : resources) {
 				if (traceEnabled) {
 					logger.trace("Scanning " + resource);
 				}
 				if (resource.isReadable()) {
 					try {
+						// 4.使用 metadataReader 读取资源，MetadataReader 是专门用来访问元数据的类（包括: 类元数据 ClassMetadata、注解元数据 AnnotationMetadata 等）
 						MetadataReader metadataReader = getMetadataReaderFactory().getMetadataReader(resource);
+						// 5.使用过滤器检查给定的类是否为候选类（候选类: 与 excludeFilters 的所有 Filter 不匹配，并且与 includeFilters 的至少一个 Filter 匹配）
 						if (isCandidateComponent(metadataReader)) {
 							ScannedGenericBeanDefinition sbd = new ScannedGenericBeanDefinition(metadataReader);
 							sbd.setSource(resource);
+							// 6.判断 sbd 是否为候选类(独立的 && (具体的实现类 || (抽象类 && 类中有方法使用 @Lookup 注解)))
 							if (isCandidateComponent(sbd)) {
 								if (debugEnabled) {
 									logger.debug("Identified candidate component class: " + resource);
 								}
+								// 7.确定是候选类，则添加到candidates
 								candidates.add(sbd);
 							}
 							else {

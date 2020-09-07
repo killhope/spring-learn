@@ -115,7 +115,7 @@ public class DefaultNamespaceHandlerResolver implements NamespaceHandlerResolver
 	@Override
 	@Nullable
 	public NamespaceHandler resolve(String namespaceUri) {
-		//1.拿到配置文件的所有命名空间和对应的 handler
+		//1.拿到“META-INF/spring.handlers”（默认地址，可以自定义）下所有命名空间和对应的 handler
 		//例如："http://www.springframework.org/schema/aop" -> "org.springframework.aop.config.AopNamespaceHandler"
 		Map<String, Object> handlerMappings = getHandlerMappings();
 		//2.拿到当前命名空间对应的 handler（可能是 handler 的 className，也可能是已经实例化的 handler）

@@ -522,6 +522,9 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 		//2.记录处理前 BeanDefinition 的个数
 		int countBefore = getRegistry().getBeanDefinitionCount();
 		//3.createReaderContext：根据 resource 创建一个 XmlReaderContext
+		//其中 XmlReaderContext 的 namespaceHandlerResolver 会创建默认的 DefaultNamespaceHandlerResolver，
+		// DefaultNamespaceHandlerResolver 的 handlerMappingsLocation 会使用默认的值 “META-INF/spring.handlers”，
+		// “META-INF/spring.handlers” 是存放命名空间和该命名空间handler类的映射的地址。后面用户自定义解析的时候会从该地址取出映射信息，存到 handlerMappings 中
 		//4.registerBeanDefinitions：加载及注册 Bean 定义
 		documentReader.registerBeanDefinitions(doc, createReaderContext(resource));
 		//5.返回本次加载的 BeanDefinition 个数
