@@ -73,10 +73,10 @@ public abstract class AopNamespaceUtils {
 
 	public static void registerAspectJAnnotationAutoProxyCreatorIfNecessary(
 			ParserContext parserContext, Element sourceElement) {
-		//1.注册 AspectJAnnotationAutoProxyCreator
+		//1.注册或升级 AnnotationAwareAspectJAutoProxyCreator（对于 AOP 的实现，基本靠 AnnotationAwareAspectJAutoProxyCreator 完成）
 		BeanDefinition beanDefinition = AopConfigUtils.registerAspectJAnnotationAutoProxyCreatorIfNecessary(
 				parserContext.getRegistry(), parserContext.extractSource(sourceElement));
-		//2.对于 proxy-target-class 以及 expose-proxy 属性的处理
+		//2.处理 proxy-target-class 与 expose-proxy 这两个属性
 		useClassProxyingIfNecessary(parserContext.getRegistry(), sourceElement);
 		//3.注册组件并通知，便于监听器做进一步处理
 		registerComponentIfNecessary(beanDefinition, parserContext);
@@ -86,10 +86,18 @@ public abstract class AopNamespaceUtils {
 		if (sourceElement != null) {
 			boolean proxyTargetClass = Boolean.parseBoolean(sourceElement.getAttribute(PROXY_TARGET_CLASS_ATTRIBUTE));
 			if (proxyTargetClass) {
+				//proxy-target-class=true，强制使用 Cglib 代理（例如某些情况希望代理目标对象的所有方法，而不只是实现自接口的方法，就可以用 Cglib）
 				AopConfigUtils.forceAutoProxyCreatorToUseClassProxying(registry);
+				/* JDK 动态代理 与 Cglib 比较
+				 * JDK 动态代理：代理对象必须是某个接口的实现类，因为 JDK 动态代理是通过在运行期间创建一个接口的实现类来完成对目标对象的处理。因此某些不是该接口的方法，就不能被代理。
+				 * Cglib 代理：Cglib 在运行期间生成一个目标类的子类来完成对目标对象的处理。子类不能重写 final 方法，因此无法 final 修饰的方法就不能代理。
+				 * Cglib 执行效率比 JDK 高
+				 */
 			}
 			boolean exposeProxy = Boolean.parseBoolean(sourceElement.getAttribute(EXPOSE_PROXY_ATTRIBUTE));
 			if (exposeProxy) {
+				//expose-proxy=true，创建拦截器会暴露代理类。
+				//用来解决在一个 service 中，方法 a 调用了方法 b，b 的注解不生效的问题
 				AopConfigUtils.forceAutoProxyCreatorToExposeProxy(registry);
 			}
 		}

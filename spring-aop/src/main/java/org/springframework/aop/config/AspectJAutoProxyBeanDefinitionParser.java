@@ -37,7 +37,7 @@ import org.springframework.lang.Nullable;
  * @since 2.0
  */
 class AspectJAutoProxyBeanDefinitionParser implements BeanDefinitionParser {
-
+	//所有解析器，都是 BeanDefinitionParser 的实现，入口都是 parse 函数
 	@Override
 	@Nullable
 	public BeanDefinition parse(Element element, ParserContext parserContext) {

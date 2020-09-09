@@ -96,7 +96,7 @@ public abstract class AopConfigUtils {
 	@Nullable
 	public static BeanDefinition registerAspectJAnnotationAutoProxyCreatorIfNecessary(
 			BeanDefinitionRegistry registry, @Nullable Object source) {
-
+		//注册或升级 AnnotationAwareAspectJAutoProxyCreator ：参数为 AnnotationAwareAspectJAutoProxyCreator.class
 		return registerOrEscalateApcAsRequired(AnnotationAwareAspectJAutoProxyCreator.class, registry, source);
 	}
 
@@ -119,19 +119,28 @@ public abstract class AopConfigUtils {
 			Class<?> cls, BeanDefinitionRegistry registry, @Nullable Object source) {
 
 		Assert.notNull(registry, "BeanDefinitionRegistry must not be null");
-
+		//1.如果已经存在名称为 org.springframework.aop.config.internalAutoProxyCreator 的自动代理创建器，需要根据优先级判断使用哪个。注：internalAutoProxyCreator 也是一个 BeanDefinition
+		// 自动代理器可能存在的三种，按优先级排序如下：
+		// InfrastructureAdvisorAutoProxyCreator、AspectJAwareAdvisorAutoProxyCreator、AnnotationAwareAspectJAutoProxyCreator
 		if (registry.containsBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME)) {
+			//拿到已经存在的 bean 定义
 			BeanDefinition apcDefinition = registry.getBeanDefinition(AUTO_PROXY_CREATOR_BEAN_NAME);
+			//如果已经存在的 bean 的 className 与当前要注册的 bean 的 className 不相同，则按优先级进行选择
 			if (!cls.getName().equals(apcDefinition.getBeanClassName())) {
+				//拿到已经存在的 bean 的优先级
 				int currentPriority = findPriorityForClass(apcDefinition.getBeanClassName());
+				//拿到当前要注册的bean的优先级
 				int requiredPriority = findPriorityForClass(cls);
 				if (currentPriority < requiredPriority) {
+					// 如果当前要注册的 bean 的优先级大于已经存在的 bean 的优先级，则将 bean 的 className 替换为当前要注册的 bean 的 className：
+					// 改变 bean 最重要的就是改变 bean 所对应的 className 属性
 					apcDefinition.setBeanClassName(cls.getName());
 				}
 			}
+			//如果已经存在的 bean 的 className 与当前要注册的 bean 的 className 相同，则无需进行任何处理
 			return null;
 		}
-
+		// 2.如果还不存在，则新建并添加到注册表中
 		RootBeanDefinition beanDefinition = new RootBeanDefinition(cls);
 		beanDefinition.setSource(source);
 		beanDefinition.getPropertyValues().add("order", Ordered.HIGHEST_PRECEDENCE);
