@@ -568,8 +568,7 @@ public abstract class AbstractAspectJAdvice implements Advice, AspectJPrecedence
 		int numBound = 0;
 
 		if (this.joinPointArgumentIndex != -1) {
-			//1.如果存在连接点参数，则将 jp 添加到调用参数
-			// 当使用 @Around 时就有参数；使用 @Before、@After 时就没有参数
+			//1.当使用 @Around 时就有参数；使用 @Before、@After 时就没有参数
 			adviceInvocationArgs[this.joinPointArgumentIndex] = jp;
 			numBound++;
 		}
@@ -579,7 +578,6 @@ public abstract class AbstractAspectJAdvice implements Advice, AspectJPrecedence
 		}
 
 		if (!CollectionUtils.isEmpty(this.argumentBindings)) {
-			// binding from pointcut match
 			//2.使用 pointcut 匹配绑定
 			if (jpMatch != null) {
 				PointcutParameter[] parameterBindings = jpMatch.getParameterBindings();
@@ -590,7 +588,6 @@ public abstract class AbstractAspectJAdvice implements Advice, AspectJPrecedence
 					numBound++;
 				}
 			}
-			// binding from returning clause
 			//3.用于绑定 @AfterReturing 中的 returning 参数
 			if (this.returningName != null) {
 				Integer index = this.argumentBindings.get(this.returningName);

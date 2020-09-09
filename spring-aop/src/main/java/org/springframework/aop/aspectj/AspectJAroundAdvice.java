@@ -61,18 +61,14 @@ public class AspectJAroundAdvice extends AbstractAspectJAdvice implements Method
 
 	@Override
 	public Object invoke(MethodInvocation mi) throws Throwable {
-		//1.这边的 mi 就是我们的 ReflectiveMethodInvocation，
-		// ReflectiveMethodInvocation 实现了 ProxyMethodInvocation 接口，所以这边肯定通过校验
+
 		if (!(mi instanceof ProxyMethodInvocation)) {
 			throw new IllegalStateException("MethodInvocation is not a Spring ProxyMethodInvocation: " + mi);
 		}
-		//2.将 mi 直接强转成 ProxyMethodInvocation，mi 持有代理类实例 proxy、被代理类实例 target、被代理的方法 method 等
 		ProxyMethodInvocation pmi = (ProxyMethodInvocation) mi;
-		//3.将 pmi 封装层 MethodInvocationProceedingJoinPoint(直接持有入参 mi，也就是 ReflectiveMethodInvocation 的引用)
 		ProceedingJoinPoint pjp = lazyGetProceedingJoinPoint(pmi);
-		//4.拿到 pointcut 的表达式
 		JoinPointMatch jpm = getJoinPointMatch(pmi);
-		//5.调用增强方法
+		//调用增强方法
 		return invokeAdviceMethod(pjp, jpm, null, null);
 	}
 
