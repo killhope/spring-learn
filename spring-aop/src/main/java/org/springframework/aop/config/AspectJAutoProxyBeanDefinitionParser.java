@@ -37,11 +37,11 @@ import org.springframework.lang.Nullable;
  * @since 2.0
  */
 class AspectJAutoProxyBeanDefinitionParser implements BeanDefinitionParser {
-	//所有解析器，都是 BeanDefinitionParser 的实现，入口都是 parse 函数
+	//自定义命名空间解析时会调用解析器的 parse 方法:Parser 是解析器的意思
 	@Override
 	@Nullable
 	public BeanDefinition parse(Element element, ParserContext parserContext) {
-		//1.注册 AspectJAnnotationAutoProxyCreator
+		//1.注册 AspectJAnnotationAutoProxyCreator:对于 AOP 的实现，基本靠 AnnotationAwareAspectJAutoProxyCreator 完成
 		AopNamespaceUtils.registerAspectJAnnotationAutoProxyCreatorIfNecessary(parserContext, element);
 		//2.对于注解中子节点的处理
 		extendBeanDefinition(element, parserContext);

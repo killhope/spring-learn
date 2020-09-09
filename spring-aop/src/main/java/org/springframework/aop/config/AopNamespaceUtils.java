@@ -73,7 +73,8 @@ public abstract class AopNamespaceUtils {
 
 	public static void registerAspectJAnnotationAutoProxyCreatorIfNecessary(
 			ParserContext parserContext, Element sourceElement) {
-		//1.注册或升级 AnnotationAwareAspectJAutoProxyCreator（对于 AOP 的实现，基本靠 AnnotationAwareAspectJAutoProxyCreator 完成）
+		//1.注册 AnnotationAwareAspectJAutoProxyCreator（对于 AOP 的实现，基本靠 AnnotationAwareAspectJAutoProxyCreator 完成）
+		// AnnotationAwareAspectJAutoProxyCreator 实现了 BeanPostProcessor，当Spring 加载这个 bean 的时候，会调用其postProcessAfterInitialization 方法
 		BeanDefinition beanDefinition = AopConfigUtils.registerAspectJAnnotationAutoProxyCreatorIfNecessary(
 				parserContext.getRegistry(), parserContext.extractSource(sourceElement));
 		//2.处理 proxy-target-class 与 expose-proxy 这两个属性
