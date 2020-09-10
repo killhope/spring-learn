@@ -284,6 +284,23 @@ public abstract class AopUtils {
 			return ((IntroductionAdvisor) advisor).getClassFilter().matches(targetClass);
 		}
 		else if (advisor instanceof PointcutAdvisor) {
+			//分析事务相关的代码
+			// 1.自定义标签解析的时候会执行 TxNamespaceHandler#init，init 方法会创建 AnnotationDrivenBeanDefinitionParser
+			// 2.解析会执行 AnnotationDrivenBeanDefinitionParser#parse 注册了 InfrastructureAdvisorAutoProxyCreator、BeanFactoryTransactionAttributeSourceAdvisor
+			//		BeanFactoryTransactionAttributeSourceAdvisor 还包含 TransactionAttributeSource
+			// 3.InfrastructureAdvisorAutoProxyCreator 实现了 BeanPostProcessor 接口，
+			// 		当 bean 初始化完后会调用 InfrastructureAdvisorAutoProxyCreator 的 postProcessAfterInitialization 方法，
+			//		postProcessAfterInitialization 方法会获取增强器，创建代理对象
+			// 4.获取增强器的的时候也会执行到 2 中的 BeanFactoryTransactionAttributeSourceAdvisor，
+			//		BeanFactoryTransactionAttributeSourceAdvisor 属于 PointcutAdvisor，进入到当前方法
+			// 5.pca.getPointcut() 会获取 TransactionAttributeSource ，以入参的形式传到 canApply
+			//
+			//
+			//
+			// 之前 BeanFactoryTransactionAttributeSourceAdvisor
+
+
+
 			PointcutAdvisor pca = (PointcutAdvisor) advisor;
 			return canApply(pca.getPointcut(), targetClass, hasIntroductions);
 		}
@@ -319,7 +336,7 @@ public abstract class AopUtils {
 			if (candidate instanceof IntroductionAdvisor) {
 				continue;
 			}
-			//2.正常增强处理，判断当前 bean 是否可以应用于当前遍历的增强器（ bean 是否包含在增强器的 execution 指定的表达式中）
+			//2.正常增强处理，判断当前 bean 是否可以应用于当前遍历的增强器（bean 是否包含在增强器的 execution 指定的表达式中）
 			if (canApply(candidate, clazz, hasIntroductions)) {
 				eligibleAdvisors.add(candidate);
 			}

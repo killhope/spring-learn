@@ -296,6 +296,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 	 */
 	@Override
 	public Object postProcessAfterInitialization(@Nullable Object bean, String beanName) throws BeansException {
+		//该方法就是获取增强器，创建代理对象
 		if (bean != null) {
 			//根据给定的 bean 的 class 和 name 构建一个 key，格式为：beanClassName_beanName
 			Object cacheKey = getCacheKey(bean.getClass(), beanName);
@@ -347,13 +348,13 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 		if (Boolean.FALSE.equals(this.advisedBeans.get(cacheKey))) {
 			return bean;
 		}
-		//如果给定的 bean 是 aop 基础设施类，或配置了该 bean 不需要自动代理
+		//入参 bean 是基础设施类，或配置了该 bean 不需要自动代理
 		if (isInfrastructureClass(bean.getClass()) || shouldSkip(bean.getClass(), beanName)) {
 			this.advisedBeans.put(cacheKey, Boolean.FALSE);
 			return bean;
 		}
 
-		//1.获取增强方法或增强器 Advisors 是 Advice（增强方法） 的集合
+		//1.获取增强器
 		Object[] specificInterceptors = getAdvicesAndAdvisorsForBean(bean.getClass(), beanName, null);
 		if (specificInterceptors != DO_NOT_PROXY) {
 			this.advisedBeans.put(cacheKey, Boolean.TRUE);
