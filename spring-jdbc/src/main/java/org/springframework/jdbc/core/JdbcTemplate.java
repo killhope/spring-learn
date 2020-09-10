@@ -583,7 +583,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	//-------------------------------------------------------------------------
 	// Methods dealing with prepared statements
 	//-------------------------------------------------------------------------
-
+	//execute 作为数据库操作的核心入口，将大多数数据库操作相同的步骤统一封装，将个性化的操作使用参数 PreparedStatementCallback 进行回调
 	@Override
 	@Nullable
 	public <T> T execute(PreparedStatementCreator psc, PreparedStatementCallback<T> action)
@@ -595,19 +595,21 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 			String sql = getSql(psc);
 			logger.debug("Executing prepared SQL statement" + (sql != null ? " [" + sql + "]" : ""));
 		}
-
+		//获取数据库连接
 		Connection con = DataSourceUtils.getConnection(obtainDataSource());
 		PreparedStatement ps = null;
 		try {
 			ps = psc.createPreparedStatement(con);
+			//应用用户设定的输入参数
 			applyStatementSettings(ps);
+			//调用回调函数
 			T result = action.doInPreparedStatement(ps);
+			//警告处理
 			handleWarnings(ps);
 			return result;
 		}
 		catch (SQLException ex) {
-			// Release Connection early, to avoid potential connection pool deadlock
-			// in the case when the exception translator hasn't been initialized yet.
+			//释放数据库连接避免当异常转换器没有被初始化的时候出现潜在的连接池死锁
 			if (psc instanceof ParameterDisposer) {
 				((ParameterDisposer) psc).cleanupParameters();
 			}
@@ -662,7 +664,9 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 					if (pss != null) {
 						pss.setValues(ps);
 					}
+					//真正的查询操作
 					rs = ps.executeQuery();
+					//extractData 方法主要负责将结果进行封装幷转换至 POJO
 					return rse.extractData(rs);
 				}
 				finally {
@@ -739,7 +743,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	public <T> List<T> query(String sql, @Nullable PreparedStatementSetter pss, RowMapper<T> rowMapper) throws DataAccessException {
 		return result(query(sql, pss, new RowMapperResultSetExtractor<>(rowMapper)));
 	}
-
+	//查询方法
 	@Override
 	public <T> List<T> query(String sql, Object[] args, int[] argTypes, RowMapper<T> rowMapper) throws DataAccessException {
 		return result(query(sql, args, argTypes, new RowMapperResultSetExtractor<>(rowMapper)));
@@ -849,8 +853,10 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 		return updateCount(execute(psc, ps -> {
 			try {
 				if (pss != null) {
+					//设置 PreparedStatement 所需的全部参数
 					pss.setValues(ps);
 				}
+				//真正执行 sql 的方法
 				int rows = ps.executeUpdate();
 				if (logger.isDebugEnabled()) {
 					logger.debug("SQL update affected " + rows + " rows");
@@ -906,6 +912,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 
 	@Override
 	public int update(String sql, Object[] args, int[] argTypes) throws DataAccessException {
+		//update 方法入口
 		return update(sql, newArgTypePreparedStatementSetter(args, argTypes));
 	}
 
@@ -1357,6 +1364,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 	 * @see org.springframework.jdbc.SQLWarningException
 	 */
 	protected void handleWarnings(Statement stmt) throws SQLException {
+		//设置忽略警告时会尝试打印日志
 		if (isIgnoreWarnings()) {
 			if (logger.isDebugEnabled()) {
 				SQLWarning warningToLog = stmt.getWarnings();
@@ -1368,6 +1376,7 @@ public class JdbcTemplate extends JdbcAccessor implements JdbcOperations {
 			}
 		}
 		else {
+			//不忽略警告会抛出异常
 			handleWarnings(stmt.getWarnings());
 		}
 	}
