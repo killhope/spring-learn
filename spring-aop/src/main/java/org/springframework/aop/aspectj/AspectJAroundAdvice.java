@@ -61,7 +61,7 @@ public class AspectJAroundAdvice extends AbstractAspectJAdvice implements Method
 
 	@Override
 	public Object invoke(MethodInvocation mi) throws Throwable {
-
+		//1.这边的 mi 就是我们的 ReflectiveMethodInvocation
 		if (!(mi instanceof ProxyMethodInvocation)) {
 			throw new IllegalStateException("MethodInvocation is not a Spring ProxyMethodInvocation: " + mi);
 		}

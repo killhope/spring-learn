@@ -182,8 +182,33 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 		}
 		else {
 			//4.普通的拦截器，直接调用拦截器，参数为 this 保证当前实例中调用链的执行
-			// 例：使用 @Around 注解时会找到 AspectJAroundAdvice、ExposeInvocationInterceptor，
-			// 其中 ExposeInvocationInterceptor.invoke 在前，AspectJAroundAdvice.invoke 在后。
+			// 以 @Around 为例 此时的链条顺序是 ExposeInvocationInterceptor、AspectJAroundAdvice
+			// （1）首先进入到 ExposeInvocationInterceptor#invoke 方法，会执行 mi.proceed() ，又进入到当前 proceed 方法
+			// （2）走到当前位置，开始执行 AspectJAroundAdvice#invoke 方法，开始调用用户自己写的方法
+			/*
+			 * @Around("pointcut()")
+			 *     public Object around(ProceedingJoinPoint pjp) throws Throwable {
+			 *         Object[] args = pjp.getArgs();
+			 *         try {
+			 *             System.out.println("入参=" + JSON.toJSONString(args));
+			 *             long start = System.currentTimeMillis();
+			 *             Object result = pjp.proceed();
+			 *             System.out.println("耗时=" + (System.currentTimeMillis() - start));
+			 *             System.out.println("回参=" + JSON.toJSONString(result));
+			 *             return result;
+			 *         } catch (Exception e) {
+			 *             return "";
+			 *         }
+			 *     }
+			 */
+			//  （3）执行到 pjp.proceed()，又会进入当前 proceed 方法，此时链条都执行完毕，开始执行原本的方法（invokeJoinpoint()）
+			//  （4）执行完 invokeJoinpoint() ,继续执行
+			/*
+			 * 				System.out.println("耗时=" + (System.currentTimeMillis() - start));
+			 * 			 	System.out.println("回参=" + JSON.toJSONString(result));
+			 * 				return result;
+			 */
+			//	（5）至此，AOP 的一次调用流程就走完了
 			return ((MethodInterceptor) interceptorOrInterceptionAdvice).invoke(this);
 		}
 	}

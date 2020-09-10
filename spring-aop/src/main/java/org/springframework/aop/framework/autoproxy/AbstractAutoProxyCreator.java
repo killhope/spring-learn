@@ -471,7 +471,7 @@ public abstract class AbstractAutoProxyCreator extends ProxyProcessorSupport
 				evaluateProxyInterfaces(beanClass, proxyFactory);
 			}
 		}
-		//1.3 将拦截器封装为 Advisor 幷加入到 ProxyFactory   这块逻辑相对繁琐
+		//1.3 将拦截器封装为 Advisor 幷加入到 ProxyFactory
 		Advisor[] advisors = buildAdvisors(beanName, specificInterceptors);
 		proxyFactory.addAdvisors(advisors);
 		//1.4 设置要代理的类		: targetSource 中存放的是被代理的原始 bean

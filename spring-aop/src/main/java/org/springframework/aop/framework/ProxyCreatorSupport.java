@@ -103,7 +103,7 @@ public class ProxyCreatorSupport extends AdvisedSupport {
 			//激活代理
 			activate();
 		}
-		//创建 AopProxy
+		//创建 AopProxy  备注：config 的参数 this 就是前面创建的 ProxyFactory，ProxyFactory 继承了 ProxyCreatorSupport
 		return getAopProxyFactory().createAopProxy(this);
 	}
 
