@@ -107,8 +107,9 @@ class AnnotationDrivenBeanDefinitionParser implements BeanDefinitionParser {
 		public static void configureAutoProxyCreator(Element element, ParserContext parserContext) {
 			//注册 InfrastructureAdvisorAutoProxyCreator
 			//	备注：InfrastructureAdvisorAutoProxyCreator 实现了 BeanPostProcessor 接口，
-			// 		 当 bean 初始化完后会调用 InfrastructureAdvisorAutoProxyCreator 的 postProcessAfterInitialization 方法
-			//		 postProcessAfterInitialization 方法会获取增强器，创建代理对象
+			// 		 当 bean 初始化完后会调用它父类的父类 AbstractAutoProxyCreator 的 postProcessAfterInitialization 方法
+			//		 postProcessAfterInitialization 方法会「获取增强器」，创建代理对象
+			//		 「获取增强器」其实就是当前方法下面创建的 BeanFactoryTransactionAttributeSourceAdvisor
 			AopNamespaceUtils.registerAutoProxyCreatorIfNecessary(parserContext, element);
 
 			String txAdvisorBeanName = TransactionManagementConfigUtils.TRANSACTION_ADVISOR_BEAN_NAME;

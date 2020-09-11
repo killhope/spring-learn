@@ -225,7 +225,7 @@ public abstract class AopUtils {
 		if (!pc.getClassFilter().matches(targetClass)) {
 			return false;
 		}
-
+		//事务走到这里，Pointcut 代表的 TransactionAttributeSource ，getMethodMatcher 返回的正是自身（this）
 		MethodMatcher methodMatcher = pc.getMethodMatcher();
 		if (methodMatcher == MethodMatcher.TRUE) {
 			// No need to iterate the methods if we're matching any method anyway...
@@ -236,15 +236,17 @@ public abstract class AopUtils {
 		if (methodMatcher instanceof IntroductionAwareMethodMatcher) {
 			introductionAwareMethodMatcher = (IntroductionAwareMethodMatcher) methodMatcher;
 		}
-
 		Set<Class<?>> classes = new LinkedHashSet<>();
 		if (!Proxy.isProxyClass(targetClass)) {
+			//获取类本身
 			classes.add(ClassUtils.getUserClass(targetClass));
 		}
+		//获取类的所有接口
 		classes.addAll(ClassUtils.getAllInterfacesForClassAsSet(targetClass));
-
+		//遍历刚刚获取的类的接口和类本身
 		for (Class<?> clazz : classes) {
 			Method[] methods = ReflectionUtils.getAllDeclaredMethods(clazz);
+			//遍历方法 匹配成功就代表这个类适用于当前增强器  匹配逻辑继续往下看 TransactionAttributeSourcePointcut#matches
 			for (Method method : methods) {
 				if (introductionAwareMethodMatcher != null ?
 						introductionAwareMethodMatcher.matches(method, targetClass, hasIntroductions) :
@@ -293,14 +295,7 @@ public abstract class AopUtils {
 			//		postProcessAfterInitialization 方法会获取增强器，创建代理对象
 			// 4.获取增强器的的时候也会执行到 2 中的 BeanFactoryTransactionAttributeSourceAdvisor，
 			//		BeanFactoryTransactionAttributeSourceAdvisor 属于 PointcutAdvisor，进入到当前方法
-			// 5.pca.getPointcut() 会获取 TransactionAttributeSource ，以入参的形式传到 canApply
-			//
-			//
-			//
-			// 之前 BeanFactoryTransactionAttributeSourceAdvisor
-
-
-
+			// 5.pca.getPointcut() 会获取 TransactionAttributeSource ，以入参的形式传到 canApply 方法
 			PointcutAdvisor pca = (PointcutAdvisor) advisor;
 			return canApply(pca.getPointcut(), targetClass, hasIntroductions);
 		}

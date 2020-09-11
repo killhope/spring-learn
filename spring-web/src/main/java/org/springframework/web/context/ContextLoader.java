@@ -143,7 +143,7 @@ public class ContextLoader {
 			// 注：ClassPathResource 的 path 属性可以是绝对路径也可以是相对路径，在这边为相对路径（相对于加载资源的类 ContextLoader），
 			// 指向的绝对路径为：org.springframework.web.context.ContextLoader.properties，resource 目录下有 ContextLoader.properties
 			ClassPathResource resource = new ClassPathResource(DEFAULT_STRATEGIES_PATH, ContextLoader.class);
-			// 2.加载resource的属性
+			// 2.加载 resource 的属性
 			defaultStrategies = PropertiesLoaderUtils.loadProperties(resource);
 		}
 		catch (IOException ex) {
@@ -298,7 +298,7 @@ public class ContextLoader {
 					configureAndRefreshWebApplicationContext(cwac, servletContext);
 				}
 			}
-			//4.设置 WebApplicationContext 属性
+			//4.将 WebApplicationContext 记录到 servletContext 中
 			servletContext.setAttribute(WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE, this.context);
 
 			ClassLoader ccl = Thread.currentThread().getContextClassLoader();
@@ -345,7 +345,7 @@ public class ContextLoader {
 	 * @see ConfigurableWebApplicationContext
 	 */
 	protected WebApplicationContext createWebApplicationContext(ServletContext sc) {
-		//1.确定要创建的应用上下文的 Class，如果 web.xml 配置了 contextClass 就用配置的，没配置用默认的 XmlWebApplicationContext
+		//1.确定要创建的应用上下文的类型：如果 web.xml 配置了 contextClass 就用配置的，没配置用默认的 XmlWebApplicationContext
 		Class<?> contextClass = determineContextClass(sc);
 		//2.contextClass 必须为 ConfigurableWebApplicationContext 的子类或子接口
 		if (!ConfigurableWebApplicationContext.class.isAssignableFrom(contextClass)) {
@@ -365,11 +365,10 @@ public class ContextLoader {
 	 * @see org.springframework.web.context.support.XmlWebApplicationContext
 	 */
 	protected Class<?> determineContextClass(ServletContext servletContext) {
-		//1.从 servletContext 中解析初始化参数 contextClass (web.xml可配)
+		//1.如果 web.xml 配置了 contextClass 参数，使用工具类构建出 contextClassName 的实例
 		String contextClassName = servletContext.getInitParameter(CONTEXT_CLASS_PARAM);
 		if (contextClassName != null) {
 			try {
-				//2.不为空，使用工具类构建出 contextClassName 的实例
 				return ClassUtils.forName(contextClassName, ClassUtils.getDefaultClassLoader());
 			}
 			catch (ClassNotFoundException ex) {
@@ -378,11 +377,10 @@ public class ContextLoader {
 			}
 		}
 		else {
-			//3.web.xml 没有配置 contextClass 参数，从 defaultStrategies 中获取 ClassName（defaultStrategies 初始化 ContextLoader.java 的时候就初始化过哦，还记得吗）
-			// 即：org.springframework.web.context.support.XmlWebApplicationContext
+			//2.没有配置 contextClass 参数，从 defaultStrategies 中获取默认的 ClassName 即：XmlWebApplicationContext
+			// defaultStrategies 是在初始化 ContextLoader.java 的时候就初始化了哦，还记得吗 ContextLoaderListener 继承了ContextLoader
 			contextClassName = defaultStrategies.getProperty(WebApplicationContext.class.getName());
 			try {
-				//4.使用工具类构建出 contextClassName 的实例
 				return ClassUtils.forName(contextClassName, ContextLoader.class.getClassLoader());
 			}
 			catch (ClassNotFoundException ex) {
