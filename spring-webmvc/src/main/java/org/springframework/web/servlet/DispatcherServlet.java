@@ -156,7 +156,8 @@ import org.springframework.web.util.WebUtils;
  */
 @SuppressWarnings("serial")
 public class DispatcherServlet extends FrameworkServlet {
-
+//DispatcherServlet 是处理 SpringMVC 的核心逻辑
+//会先执行 HttpServletBean#init
 	/** Well-known name for the MultipartResolver object in the bean factory for this namespace. */
 	public static final String MULTIPART_RESOLVER_BEAN_NAME = "multipartResolver";
 
