@@ -35,10 +35,11 @@ import javax.servlet.ServletContextListener;
  * @see org.springframework.web.WebApplicationInitializer
  */
 public class ContextLoaderListener extends ContextLoader implements ServletContextListener {
-//ContextLoaderListener 的作用是启动 web 容器时，自动装配 ApplicationContext 的配置信息
-		//因为它实现了 ServletContextListener，ServletContextListener 的核心逻辑便是 初始化 ApplicationContext 实例幷存放到 ServletContext 中
-//ContextLoaderListener 继承了 ContextLoader，所以首先会执行 ContextLoader 中有一段 static 代码，该代码的含义是：默认实现的 XmlWebApplicationContext
-//在 web 应用启动的时候会调用 ContextLoaderListener#contextInitialized，停止的时候会调用 ContextLoaderListener#contextDestroyed
+//1.ContextLoaderListener 的作用是启动 web 容器时，自动装配 ApplicationContext 的配置信息
+		//ContextLoaderListener 实现了 ServletContextListener，ServletContextListener 的核心逻辑便是 初始化 ApplicationContext 实例幷存放到 ServletContext 中,
+		//每一个 web 应用都有一个 ServletContext 与之关联。ServletContext 在应用启动时被创建，应用关闭时被销毁
+//2.ContextLoaderListener 继承了 ContextLoader，所以首先会执行 ContextLoader 中有一段 static 代码，该代码的含义是：默认实现的 XmlWebApplicationContext
+//3.在 web 应用启动的时候会调用 ContextLoaderListener#contextInitialized，停止的时候会调用 ContextLoaderListener#contextDestroyed
 
 
 	/**

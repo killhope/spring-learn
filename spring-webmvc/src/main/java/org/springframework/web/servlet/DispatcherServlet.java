@@ -156,8 +156,9 @@ import org.springframework.web.util.WebUtils;
  */
 @SuppressWarnings("serial")
 public class DispatcherServlet extends FrameworkServlet {
-//DispatcherServlet 是处理 SpringMVC 的核心逻辑
-//会先执行 HttpServletBean#init
+//DispatcherServlet 是处理 SpringMVC 的核心逻辑，通过执行 HttpServletBean#init 进行初始化
+//在运行期间会调用 FrameworkServlet#service，service 会根据 get、post等类型，选择执行 doGet、doPost 方法。FrameworkServlet#doGet、FrameworkServlet#doPost
+
 	/** Well-known name for the MultipartResolver object in the bean factory for this namespace. */
 	public static final String MULTIPART_RESOLVER_BEAN_NAME = "multipartResolver";
 
@@ -496,13 +497,30 @@ public class DispatcherServlet extends FrameworkServlet {
 	 * <p>May be overridden in subclasses in order to initialize further strategy objects.
 	 */
 	protected void initStrategies(ApplicationContext context) {
+		//MultipartResolver 主要用来处理文件上传
 		initMultipartResolver(context);
+		//LocaleResolver 国际化
 		initLocaleResolver(context);
+		//ThemeResolver 主题解析器
 		initThemeResolver(context);
+		//客户端发出的 Request 时，DispatcherServlet 会将 Request 提交给 HandlerMapping，
+		//然后 HandlerMapping 根据 WebApplicationContext 的配置回传给 DispatcherServlet 相应的 Controller
 		initHandlerMappings(context);
+		//不同的 HandlerMapping 映射出来的 Handler 对象是不一样的，不同的 Handler 需要不同的 HandlerAdapter 适配器来解析
 		initHandlerAdapters(context);
+		//基于 HandlerExceptionResolver 接口的异常处理
 		initHandlerExceptionResolvers(context);
+		//RequestToViewNameTranslator : 当 Controller 处理器方法没有返回一个 View 对象或逻辑视图时，
+		// 并且该方法没有往 response 的输出流里写数据时，Spring 就会采用约定好的方式提供一个逻辑视图名称。
+		// 通过实现 RequestToViewNameTranslator 接口的 getViewName 方法来确认如何约定
 		initRequestToViewNameTranslator(context);
+		/*
+		 * <bean class ="org.Spring.framework.web.servlet.view.InternalResourceViewResolver">
+		 * 		<property name=”prefix” value=”/WEB-INF/views/” />
+		 * 		<property name=”suffix" value=”.jsp” />
+		 * </bean>
+		 */
+		//当 Controller 将处理的结果放入到 ModelAndView 中之后，DispatcherServlet 通过 「ViewResolvers」选择合适的视图进行渲染
 		initViewResolvers(context);
 		initFlashMapManager(context);
 	}
@@ -620,12 +638,12 @@ public class DispatcherServlet extends FrameworkServlet {
 		this.handlerAdapters = null;
 
 		if (this.detectAllHandlerAdapters) {
-			// Find all HandlerAdapters in the ApplicationContext, including ancestor contexts.
+			//加载注入容器中的适配器
 			Map<String, HandlerAdapter> matchingBeans =
 					BeanFactoryUtils.beansOfTypeIncludingAncestors(context, HandlerAdapter.class, true, false);
 			if (!matchingBeans.isEmpty()) {
 				this.handlerAdapters = new ArrayList<>(matchingBeans.values());
-				// We keep HandlerAdapters in sorted order.
+				//对适配器进行排序
 				AnnotationAwareOrderComparator.sort(this.handlerAdapters);
 			}
 		}
@@ -642,6 +660,7 @@ public class DispatcherServlet extends FrameworkServlet {
 		// Ensure we have at least some HandlerAdapters, by registering
 		// default HandlerAdapters if no other adapters are found.
 		if (this.handlerAdapters == null) {
+			//如果无法找到 handlerAdapters，系统会尝试加载默认的适配器
 			this.handlerAdapters = getDefaultStrategies(context, HandlerAdapter.class);
 			if (logger.isDebugEnabled()) {
 				logger.debug("No HandlerAdapters found in servlet '" + getServletName() + "': using default");
@@ -835,9 +854,9 @@ public class DispatcherServlet extends FrameworkServlet {
 	 * @param strategyInterface the strategy interface
 	 * @return the List of corresponding strategy objects
 	 */
-	@SuppressWarnings("unchecked")
 	protected <T> List<T> getDefaultStrategies(ApplicationContext context, Class<T> strategyInterface) {
 		String key = strategyInterface.getName();
+		//从 defaultStrategies 中获取默认的 HandlerAdapter。defaultStrategies 的初始化是在上面的静态方法里 DEFAULT_STRATEGIES_PATH
 		String value = defaultStrategies.getProperty(key);
 		if (value != null) {
 			String[] classNames = StringUtils.commaDelimitedListToStringArray(value);
@@ -893,8 +912,7 @@ public class DispatcherServlet extends FrameworkServlet {
 					" processing " + request.getMethod() + " request for [" + getRequestUri(request) + "]");
 		}
 
-		// Keep a snapshot of the request attributes in case of an include,
-		// to be able to restore the original attributes after the include.
+		//1.一系列准备工作
 		Map<String, Object> attributesSnapshot = null;
 		if (WebUtils.isIncludeRequest(request)) {
 			attributesSnapshot = new HashMap<>();
@@ -923,6 +941,7 @@ public class DispatcherServlet extends FrameworkServlet {
 		}
 
 		try {
+			//2.处理请求的逻辑
 			doDispatch(request, response);
 		}
 		finally {
@@ -958,20 +977,22 @@ public class DispatcherServlet extends FrameworkServlet {
 			Exception dispatchException = null;
 
 			try {
+				//1.如果是 MultipartContent 类型的 request ，则转换为 MultipartHttpServletRequest 类型
 				processedRequest = checkMultipart(request);
 				multipartRequestParsed = (processedRequest != request);
 
-				// Determine handler for the current request.
+				//2.根据 request 信息寻找对应的 Handler
 				mappedHandler = getHandler(processedRequest);
 				if (mappedHandler == null) {
+					//3.没找到 Handler
 					noHandlerFound(processedRequest, response);
 					return;
 				}
 
-				// Determine handler adapter for the current request.
+				//4.根据 Handler 寻找对应的 HandlerAdapter
 				HandlerAdapter ha = getHandlerAdapter(mappedHandler.getHandler());
 
-				// Process last-modified header, if supported by the handler.
+				//5.缓存处理：last-modified 不常用
 				String method = request.getMethod();
 				boolean isGet = "GET".equals(method);
 				if (isGet || "HEAD".equals(method)) {
@@ -987,15 +1008,15 @@ public class DispatcherServlet extends FrameworkServlet {
 				if (!mappedHandler.applyPreHandle(processedRequest, response)) {
 					return;
 				}
-
-				// Actually invoke the handler.
+				//6.真正的激活 Handler 幷返回视图：SimpleControllerHandlerAdapter#handle
 				mv = ha.handle(processedRequest, response, mappedHandler.getHandler());
 
 				if (asyncManager.isConcurrentHandlingStarted()) {
 					return;
 				}
-
+				//7.没有视图，创建默认视图
 				applyDefaultViewName(processedRequest, mv);
+				//8.应用所有拦截器的 postHandle 方法
 				mappedHandler.applyPostHandle(processedRequest, response, mv);
 			}
 			catch (Exception ex) {
@@ -1006,6 +1027,7 @@ public class DispatcherServlet extends FrameworkServlet {
 				// making them available for @ExceptionHandler methods and other scenarios.
 				dispatchException = new NestedServletException("Handler dispatch failed", err);
 			}
+			//9.异常视图的处理&根据视图跳转页面
 			processDispatchResult(processedRequest, response, mappedHandler, mv, dispatchException);
 		}
 		catch (Exception ex) {
@@ -1060,6 +1082,7 @@ public class DispatcherServlet extends FrameworkServlet {
 			}
 			else {
 				Object handler = (mappedHandler != null ? mappedHandler.getHandler() : null);
+				//异常视图的处理
 				mv = processHandlerException(request, response, handler, exception);
 				errorView = (mv != null);
 			}
@@ -1067,6 +1090,7 @@ public class DispatcherServlet extends FrameworkServlet {
 
 		// Did the handler return a view to render?
 		if (mv != null && !mv.wasCleared()) {
+			//根据视图跳转页面
 			render(mv, request, response);
 			if (errorView) {
 				WebUtils.clearErrorRequestAttributes(request);
@@ -1226,6 +1250,7 @@ public class DispatcherServlet extends FrameworkServlet {
 				if (logger.isTraceEnabled()) {
 					logger.trace("Testing handler adapter [" + ha + "]");
 				}
+				//SimpleControllerHandlerAdapter#supports
 				if (ha.supports(handler)) {
 					return ha;
 				}
@@ -1299,7 +1324,7 @@ public class DispatcherServlet extends FrameworkServlet {
 		View view;
 		String viewName = mv.getViewName();
 		if (viewName != null) {
-			// We need to resolve the view name.
+			//解析视图名称
 			view = resolveViewName(viewName, mv.getModelInternal(), locale, request);
 			if (view == null) {
 				throw new ServletException("Could not resolve view with name '" + mv.getViewName() +

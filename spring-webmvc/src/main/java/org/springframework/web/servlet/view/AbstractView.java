@@ -304,6 +304,7 @@ public abstract class AbstractView extends WebApplicationObjectSupport implement
 	@Override
 	public void render(@Nullable Map<String, ?> model, HttpServletRequest request,
 			HttpServletResponse response) throws Exception {
+		//该方法进行页面跳转
 
 		if (logger.isTraceEnabled()) {
 			logger.trace("Rendering view with name '" + this.beanName + "' with model " + model +

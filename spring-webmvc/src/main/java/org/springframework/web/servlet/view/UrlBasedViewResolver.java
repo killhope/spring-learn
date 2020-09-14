@@ -548,10 +548,12 @@ public class UrlBasedViewResolver extends AbstractCachingViewResolver implements
 		Assert.state(viewClass != null, "No view class");
 
 		AbstractUrlBasedView view = (AbstractUrlBasedView) BeanUtils.instantiateClass(viewClass);
+		//添加前缀&后缀
 		view.setUrl(getPrefix() + viewName + getSuffix());
 
 		String contentType = getContentType();
 		if (contentType != null) {
+			//设置 contentType
 			view.setContentType(contentType);
 		}
 

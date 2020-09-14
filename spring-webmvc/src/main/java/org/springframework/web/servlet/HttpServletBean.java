@@ -156,8 +156,8 @@ public abstract class HttpServletBean extends HttpServlet implements Environment
 			try {
 				//2.将当前 Servlet 转换为 BeanWrapper：为了能够以 Spring 的方式对 init-param 的值进行注入
 				BeanWrapper bw = PropertyAccessorFactory.forBeanPropertyAccess(this);
+				//3.注册自定义属性编辑器 CustomEditor ，作用是对当前实例（DispatcherServlet）属性注入过程中，一旦遇到 Resource 类型的属性将会使用 ResourceEditor 进行解析
 				ResourceLoader resourceLoader = new ServletContextResourceLoader(getServletContext());
-				//3.注册自定义属性编辑器：该编辑器的作用是，对当前实例（DispatcherServlet）属性注入过程中，一旦遇到 Resource 类型的属性将会使用 ResourceEditor 进行解析
 				bw.registerCustomEditor(Resource.class, new ResourceEditor(resourceLoader, getEnvironment()));
 				//空实现，留给子类自定义
 				initBeanWrapper(bw);
@@ -227,6 +227,7 @@ public abstract class HttpServletBean extends HttpServlet implements Environment
 		 */
 		public ServletConfigPropertyValues(ServletConfig config, Set<String> requiredProperties)
 				throws ServletException {
+			//用户通过对 requiredProperties 参数初始化化来强制验证某些属性的必要性。一旦检测到这些属性没有初始值，会抛出异常
 
 			Set<String> missingProps = (!CollectionUtils.isEmpty(requiredProperties) ?
 					new HashSet<>(requiredProperties) : null);
