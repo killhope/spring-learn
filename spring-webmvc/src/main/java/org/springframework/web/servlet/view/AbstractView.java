@@ -310,9 +310,10 @@ public abstract class AbstractView extends WebApplicationObjectSupport implement
 			logger.trace("Rendering view with name '" + this.beanName + "' with model " + model +
 				" and static attributes " + this.staticAttributes);
 		}
-
+		//解析 request 的属性值，放到 mergedModel 中，以便页面直接通过 JSTL 语法或者直接 request 获取
 		Map<String, Object> mergedModel = createMergedOutputModel(model, request, response);
 		prepareResponse(request, response);
+		//页面跳转处理
 		renderMergedOutputModel(mergedModel, getRequestToExpose(request), response);
 	}
 

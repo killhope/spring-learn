@@ -348,7 +348,7 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 	@Override
 	@Nullable
 	public final HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception {
-		//根据 request 获取对应的 handler :AbstractUrlHandlerMapping#getHandlerInternal
+		//1.根据 request 获取对应的 handler :AbstractUrlHandlerMapping#getHandlerInternal
 		Object handler = getHandlerInternal(request);
 		if (handler == null) {
 			//如果没有对应的 request 的 handler，则使用默认的 handler
@@ -357,12 +357,12 @@ public abstract class AbstractHandlerMapping extends WebApplicationObjectSupport
 		if (handler == null) {
 			return null;
 		}
-		// Bean name or resolved handler?
+		//2.返回的是 String 类型，说明返回的是配置的 bean 名称，需要找到响应的 bean
 		if (handler instanceof String) {
 			String handlerName = (String) handler;
 			handler = obtainApplicationContext().getBean(handlerName);
 		}
-
+		//3.对 Handler 进行封装，将配置中对应的拦截器加入到执行链中
 		HandlerExecutionChain executionChain = getHandlerExecutionChain(handler, request);
 		if (CorsUtils.isCorsRequest(request)) {
 			CorsConfiguration globalConfig = this.globalCorsConfigSource.getCorsConfiguration(request);

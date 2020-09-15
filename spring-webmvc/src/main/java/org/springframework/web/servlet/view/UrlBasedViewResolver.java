@@ -464,13 +464,12 @@ public class UrlBasedViewResolver extends AbstractCachingViewResolver implements
 	 */
 	@Override
 	protected View createView(String viewName, Locale locale) throws Exception {
-		// If this resolver is not supposed to handle the given view,
-		// return null to pass on to the next resolver in the chain.
+		//如果当解析器不支持当前解析器如 viewName 为空等情况
 		if (!canHandle(viewName, locale)) {
 			return null;
 		}
 
-		// Check for special "redirect:" prefix.
+		//处理前缀为 redirect:xx 的情况
 		if (viewName.startsWith(REDIRECT_URL_PREFIX)) {
 			String redirectUrl = viewName.substring(REDIRECT_URL_PREFIX.length());
 			RedirectView view = new RedirectView(redirectUrl,
@@ -482,13 +481,13 @@ public class UrlBasedViewResolver extends AbstractCachingViewResolver implements
 			return applyLifecycleMethods(REDIRECT_URL_PREFIX, view);
 		}
 
-		// Check for special "forward:" prefix.
+		//处理前缀为 forward:xx 的情况
 		if (viewName.startsWith(FORWARD_URL_PREFIX)) {
 			String forwardUrl = viewName.substring(FORWARD_URL_PREFIX.length());
 			return new InternalResourceView(forwardUrl);
 		}
 
-		// Else fall back to superclass implementation: calling loadView.
+		//继续往下走
 		return super.createView(viewName, locale);
 	}
 
@@ -524,6 +523,7 @@ public class UrlBasedViewResolver extends AbstractCachingViewResolver implements
 	 */
 	@Override
 	protected View loadView(String viewName, Locale locale) throws Exception {
+		//继续往下走
 		AbstractUrlBasedView view = buildView(viewName);
 		View result = applyLifecycleMethods(viewName, view);
 		return (view.checkResource(locale) ? result : null);
@@ -559,7 +559,7 @@ public class UrlBasedViewResolver extends AbstractCachingViewResolver implements
 
 		view.setRequestContextAttribute(getRequestContextAttribute());
 		view.setAttributesMap(getAttributesMap());
-
+		//添加一些必须的属性值
 		Boolean exposePathVariables = getExposePathVariables();
 		if (exposePathVariables != null) {
 			view.setExposePathVariables(exposePathVariables);

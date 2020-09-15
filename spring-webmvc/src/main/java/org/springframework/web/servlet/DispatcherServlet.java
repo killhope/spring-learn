@@ -984,7 +984,7 @@ public class DispatcherServlet extends FrameworkServlet {
 				//2.根据 request 信息寻找对应的 Handler
 				mappedHandler = getHandler(processedRequest);
 				if (mappedHandler == null) {
-					//3.没找到 Handler
+					//3.没找到 Handler 的错误处理
 					noHandlerFound(processedRequest, response);
 					return;
 				}
@@ -992,7 +992,8 @@ public class DispatcherServlet extends FrameworkServlet {
 				//4.根据 Handler 寻找对应的 HandlerAdapter
 				HandlerAdapter ha = getHandlerAdapter(mappedHandler.getHandler());
 
-				//5.缓存处理：last-modified 不常用
+				//5.缓存处理 last-modified ：通过实现 LastModified 接口来实现相关接口
+				//客户端第二次请求时，向服务端发送请求头"If-Modified-Since"，询问内容是否被修改过，如果服务端内容没有变，自动返回 HTTP 304 状态码，不返回内容，这样就节省了网络带宽
 				String method = request.getMethod();
 				boolean isGet = "GET".equals(method);
 				if (isGet || "HEAD".equals(method)) {
@@ -1004,20 +1005,22 @@ public class DispatcherServlet extends FrameworkServlet {
 						return;
 					}
 				}
-
+				//servlet 过滤器可以在 servlet 处理每个 web 请求的前后分别对它进行前置处理和后置处理
+				//X.执行 servlet 过滤器的前置方法 preHandle
 				if (!mappedHandler.applyPreHandle(processedRequest, response)) {
 					return;
 				}
-				//6.真正的激活 Handler 幷返回视图：SimpleControllerHandlerAdapter#handle
+				//6.真正的激活 Handler 幷返回视图：普通 web 请求，默认使用 SimpleControllerHandlerAdapter#handle
 				mv = ha.handle(processedRequest, response, mappedHandler.getHandler());
 
 				if (asyncManager.isConcurrentHandlingStarted()) {
 					return;
 				}
-				//7.没有视图，创建默认视图
+				//没有视图，创建默认视图
 				applyDefaultViewName(processedRequest, mv);
-				//8.应用所有拦截器的 postHandle 方法
+				//X.执行 servlet 过滤器的后置方法 postHandle
 				mappedHandler.applyPostHandle(processedRequest, response, mv);
+				//下面还有 9 呢，继续往下看
 			}
 			catch (Exception ex) {
 				dispatchException = ex;
@@ -1082,7 +1085,7 @@ public class DispatcherServlet extends FrameworkServlet {
 			}
 			else {
 				Object handler = (mappedHandler != null ? mappedHandler.getHandler() : null);
-				//异常视图的处理
+				//1.异常视图的处理
 				mv = processHandlerException(request, response, handler, exception);
 				errorView = (mv != null);
 			}
@@ -1247,11 +1250,12 @@ public class DispatcherServlet extends FrameworkServlet {
 	 */
 	protected HandlerAdapter getHandlerAdapter(Object handler) throws ServletException {
 		if (this.handlerAdapters != null) {
+			//遍历所有适配器，返回合适的适配器
 			for (HandlerAdapter ha : this.handlerAdapters) {
 				if (logger.isTraceEnabled()) {
 					logger.trace("Testing handler adapter [" + ha + "]");
 				}
-				//SimpleControllerHandlerAdapter#supports
+				//默认情况下，普通的 web 请求会交给 SimpleControllerHandlerAdapter#supports 处理
 				if (ha.supports(handler)) {
 					return ha;
 				}
@@ -1325,7 +1329,7 @@ public class DispatcherServlet extends FrameworkServlet {
 		View view;
 		String viewName = mv.getViewName();
 		if (viewName != null) {
-			//解析视图名称
+			//1.解析视图名称
 			view = resolveViewName(viewName, mv.getModelInternal(), locale, request);
 			if (view == null) {
 				throw new ServletException("Could not resolve view with name '" + mv.getViewName() +
@@ -1349,6 +1353,7 @@ public class DispatcherServlet extends FrameworkServlet {
 			if (mv.getStatus() != null) {
 				response.setStatus(mv.getStatus().value());
 			}
+			//2.页面跳转
 			view.render(mv.getModelInternal(), request, response);
 		}
 		catch (Exception ex) {
@@ -1391,6 +1396,7 @@ public class DispatcherServlet extends FrameworkServlet {
 
 		if (this.viewResolvers != null) {
 			for (ViewResolver viewResolver : this.viewResolvers) {
+				//UrlBasedViewResolver 继承 AbstractCachingViewResolver，所以执行的 AbstractCachingViewResolver#resolveViewName
 				View view = viewResolver.resolveViewName(viewName, locale);
 				if (view != null) {
 					return view;

@@ -170,11 +170,12 @@ public abstract class AbstractController extends WebContentGenerator implements 
 				Object mutex = WebUtils.getSessionMutex(session);
 				synchronized (mutex) {
 					//调用用户的逻辑
+					//书中举得例子是 UserController 继承了 AbstractController，重写了 handleRequestInternal 方法，里面放的用户自定义的逻辑
 					return handleRequestInternal(request, response);
 				}
 			}
 		}
-
+		//调用用户的逻辑
 		return handleRequestInternal(request, response);
 	}
 
