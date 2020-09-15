@@ -497,14 +497,14 @@ public class DispatcherServlet extends FrameworkServlet {
 	 * <p>May be overridden in subclasses in order to initialize further strategy objects.
 	 */
 	protected void initStrategies(ApplicationContext context) {
-		//MultipartResolver 主要用来处理文件上传
+		//MultipartResolver 用于处理文件上传
 		initMultipartResolver(context);
-		//LocaleResolver 国际化
+		//LocaleResolver 用于支持国际化
 		initLocaleResolver(context);
-		//ThemeResolver 主题解析器
+		//ThemeResolver 主题解析器，用于支持不同的主题
 		initThemeResolver(context);
-		//客户端发出的 Request 时，DispatcherServlet 会将 Request 提交给 HandlerMapping，
-		//然后 HandlerMapping 根据 WebApplicationContext 的配置回传给 DispatcherServlet 相应的 Controller
+		//客户端发送 Request 请求，DispatcherServlet 将请求提交给 HandlerMapping，
+		// HandlerMapping 根据应用上下文的配置回传给 DispatcherServlet 相应的 Handler
 		initHandlerMappings(context);
 		//不同的 HandlerMapping 映射出来的 Handler 对象是不一样的，不同的 Handler 需要不同的 HandlerAdapter 适配器来解析
 		initHandlerAdapters(context);
@@ -522,6 +522,7 @@ public class DispatcherServlet extends FrameworkServlet {
 		 */
 		//当 Controller 将处理的结果放入到 ModelAndView 中之后，DispatcherServlet 通过 「ViewResolvers」选择合适的视图进行渲染
 		initViewResolvers(context);
+		//SpringMVC 允许重定向时携带参数，存在session中，用完就销毁，所以叫FlashMap
 		initFlashMapManager(context);
 	}
 

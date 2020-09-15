@@ -150,7 +150,7 @@ public abstract class HttpServletBean extends HttpServlet implements Environment
 			logger.debug("Initializing servlet '" + getServletName() + "'");
 		}
 
-		//1.解析 init-param 幷封装到 pvs 中
+		//1.解析 init-param 幷封装到 PropertyValues 中
 		PropertyValues pvs = new ServletConfigPropertyValues(getServletConfig(), this.requiredProperties);
 		if (!pvs.isEmpty()) {
 			try {
