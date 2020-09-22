@@ -1253,7 +1253,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		assertBeanFactoryActive();
 		return getBeanFactory().getBeanNamesForAnnotation(annotationType);
 	}
-
+	//根据注解，返回所有被注解标注的 bean
 	@Override
 	public Map<String, Object> getBeansWithAnnotation(Class<? extends Annotation> annotationType)
 			throws BeansException {

@@ -55,6 +55,7 @@ import org.springframework.lang.Nullable;
  * @see HierarchicalBeanFactory
  * @see BeanFactoryUtils
  */
+//列举当前容器中所有的 bean，同时会隐藏一些 BeanFactory 内部的 bean
 public interface ListableBeanFactory extends BeanFactory {
 
 	/**

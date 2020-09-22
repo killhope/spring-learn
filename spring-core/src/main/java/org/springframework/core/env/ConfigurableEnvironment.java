@@ -69,6 +69,7 @@ import java.util.Map;
  * @see StandardEnvironment
  * @see org.springframework.context.ConfigurableApplicationContext#getEnvironment
  */
+//用编程式设置 profile
 public interface ConfigurableEnvironment extends Environment, ConfigurablePropertyResolver {
 
 	/**
@@ -116,6 +117,7 @@ public interface ConfigurableEnvironment extends Environment, ConfigurableProper
 	 * variables.
 	 * @see AbstractEnvironment#customizePropertySources
 	 */
+	//Mutable 开头的类名，通常可能是一个类型的 List 组合封装
 	MutablePropertySources getPropertySources();
 
 	/**

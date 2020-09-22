@@ -27,12 +27,14 @@ import org.springframework.lang.Nullable;
  * @see Environment
  * @see PropertySourcesPropertyResolver
  */
+//处理占位符 ${} 的
 public interface PropertyResolver {
 
 	/**
 	 * Return whether the given property key is available for resolution,
 	 * i.e. if the value for the given key is not {@code null}.
 	 */
+	//检查所有的配置属性中是否包含指定 key
 	boolean containsProperty(String key);
 
 	/**
@@ -44,6 +46,7 @@ public interface PropertyResolver {
 	 * @see #getRequiredProperty(String)
 	 */
 	@Nullable
+	//返回指定的配置属性的值
 	String getProperty(String key);
 
 	/**
@@ -54,6 +57,7 @@ public interface PropertyResolver {
 	 * @see #getRequiredProperty(String)
 	 * @see #getProperty(String, Class)
 	 */
+	//带默认值的获取
 	String getProperty(String key, String defaultValue);
 
 	/**
@@ -64,6 +68,7 @@ public interface PropertyResolver {
 	 * @see #getRequiredProperty(String, Class)
 	 */
 	@Nullable
+	//指定返回类型的配置属性值获取
 	<T> T getProperty(String key, Class<T> targetType);
 
 	/**
@@ -100,6 +105,7 @@ public interface PropertyResolver {
 	 * @see #resolveRequiredPlaceholders
 	 * @see org.springframework.util.SystemPropertyUtils#resolvePlaceholders(String)
 	 */
+	//解析占位符
 	String resolvePlaceholders(String text);
 
 	/**

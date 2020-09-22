@@ -277,7 +277,7 @@ public abstract class AbstractEnvironment implements ConfigurableEnvironment {
 		}
 	}
 
-
+	//获取默认的 profiles
 	@Override
 	public String[] getDefaultProfiles() {
 		return StringUtils.toStringArray(doGetDefaultProfiles());
@@ -297,8 +297,11 @@ public abstract class AbstractEnvironment implements ConfigurableEnvironment {
 	 */
 	protected Set<String> doGetDefaultProfiles() {
 		synchronized (this.defaultProfiles) {
+			//取框架默认的 profiles，并与当前的对比
 			if (this.defaultProfiles.equals(getReservedDefaultProfiles())) {
+				//如果一致，则尝试从 Environment 中获取显式声明的 profiles  通过声明 spring.profiles.default 来配置默认的 profile
 				String profiles = getProperty(DEFAULT_PROFILES_PROPERTY_NAME);
+				//如果有显式声明，则覆盖原有的默认值
 				if (StringUtils.hasText(profiles)) {
 					setDefaultProfiles(StringUtils.commaDelimitedListToStringArray(
 							StringUtils.trimAllWhitespace(profiles)));

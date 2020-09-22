@@ -29,6 +29,7 @@ import org.springframework.lang.Nullable;
  * @author Juergen Hoeller
  * @since 4.3
  */
+//延迟注入：返回一个包装，用的时候拆包
 public interface ObjectProvider<T> extends ObjectFactory<T> {
 
 	/**
