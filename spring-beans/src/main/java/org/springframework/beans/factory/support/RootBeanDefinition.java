@@ -52,10 +52,11 @@ import org.springframework.util.Assert;
  */
 @SuppressWarnings("serial")
 public class RootBeanDefinition extends AbstractBeanDefinition {
-
+	//BeanDefinition 的引用持有，存放了 Bean 的别名
 	@Nullable
 	private BeanDefinitionHolder decoratedDefinition;
 
+	//Bean 上面的注解信息
 	@Nullable
 	private AnnotatedElement qualifiedElement;
 
@@ -63,14 +64,17 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 
 	boolean isFactoryMethodUnique = false;
 
+	//Bean 中的泛型
 	@Nullable
 	volatile ResolvableType targetType;
 
 	/** Package-visible field for caching the determined Class of a given bean definition */
+	//BeanDefinition 对应的真实的 Bean
 	@Nullable
 	volatile Class<?> resolvedTargetType;
 
 	/** Package-visible field for caching the return type of a generically typed factory method */
+	//工厂 Bean 方法返回的类型
 	@Nullable
 	volatile ResolvableType factoryMethodReturnType;
 

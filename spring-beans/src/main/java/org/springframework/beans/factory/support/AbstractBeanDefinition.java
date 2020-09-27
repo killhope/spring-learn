@@ -136,26 +136,32 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 */
 	public static final String INFER_METHOD = "(inferred)";
 
-
+	//Bean 的全限定类名
 	@Nullable
 	private volatile Object beanClass;
 
+	//默认的作用域是单例
 	@Nullable
 	private String scope = SCOPE_DEFAULT;
 
+	//默认的 Bean 都不是抽象的
 	private boolean abstractFlag = false;
 
+	//是否延迟加载
 	private boolean lazyInit = false;
 
+	//自动注入模式(默认不自动注入)
 	private int autowireMode = AUTOWIRE_NO;
 
 	private int dependencyCheck = DEPENDENCY_CHECK_NONE;
 
 	@Nullable
 	private String[] dependsOn;
-
+	//是否参与IOC容器的自动注入(设置为false则它不会注入到其他bean，但其他bean可以注入到它本身)
+	//可以这样理解：设置为false后，你们不要来找我，但我可以去找你们
 	private boolean autowireCandidate = true;
 
+	//同类型的首选bean
 	private boolean primary = false;
 
 	private final Map<String, AutowireCandidateQualifier> qualifiers = new LinkedHashMap<>();
@@ -173,17 +179,21 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	@Nullable
 	private String factoryMethodName;
 
+	//Bean 的构造器参数和参数值列表
 	@Nullable
 	private ConstructorArgumentValues constructorArgumentValues;
 
+	//Bean 的属性和属性值集合
 	@Nullable
 	private MutablePropertyValues propertyValues;
 
 	private MethodOverrides methodOverrides = new MethodOverrides();
 
+	//Bean 的初始化方法
 	@Nullable
 	private String initMethodName;
 
+	//Bean 的销毁方法
 	@Nullable
 	private String destroyMethodName;
 
@@ -198,6 +208,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	@Nullable
 	private String description;
 
+	//Bean 的资源来源
 	@Nullable
 	private Resource resource;
 
