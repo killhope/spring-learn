@@ -176,7 +176,7 @@ public abstract class AbstractApplicationEventMulticaster
 		Class<?> sourceType = (source != null ? source.getClass() : null);
 		ListenerCacheKey cacheKey = new ListenerCacheKey(eventType, sourceType);
 
-		// Quick check for existing entry on ConcurrentHashMap...
+		//使用监听器缓存+双检锁，保证快速取出监听器
 		ListenerRetriever retriever = this.retrieverCache.get(cacheKey);
 		if (retriever != null) {
 			return retriever.getApplicationListeners();
@@ -189,6 +189,7 @@ public abstract class AbstractApplicationEventMulticaster
 			synchronized (this.retrievalMutex) {
 				retriever = this.retrieverCache.get(cacheKey);
 				if (retriever != null) {
+					//双检锁通过（缓存中确实没有），执行获取监听器的逻辑
 					return retriever.getApplicationListeners();
 				}
 				retriever = new ListenerRetriever(true);

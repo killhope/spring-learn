@@ -398,8 +398,6 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				eventType = ((PayloadApplicationEvent<?>) applicationEvent).getResolvableType();
 			}
 		}
-
-		// Multicast right now if possible - or lazily once the multicaster is initialized
 		if (this.earlyApplicationEvents != null) {
 			this.earlyApplicationEvents.add(applicationEvent);
 		}
@@ -408,7 +406,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			getApplicationEventMulticaster().multicastEvent(applicationEvent, eventType);
 		}
 
-		//3.通过 parent 发布事件......
+		//3.通知父容器发布事件
 		if (this.parent != null) {
 			if (this.parent instanceof AbstractApplicationContext) {
 				((AbstractApplicationContext) this.parent).publishEvent(event, eventType);
@@ -523,8 +521,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 		synchronized (this.startupShutdownMonitor) {
 			//1.准备工作，对系统属性、环境变量进行验证，用户也可以自定义操作
 			prepareRefresh();
-			//2.创建一个新的 BeanFactory。
-			// 该方法会解析所有 Spring 配置文件，将所有 Spring 配置文件中的 bean 定义封装成 BeanDefinition，加载到 BeanFactory 中。
+			//2.解析 xml 文件或别的 Spring 配置文件，将文件中的 bean 定义封装成 BeanDefinition，加载到 BeanFactory 中。
 			// “加载到 BeanFactory 中”的内容主要指的是以下3个缓存：
 			//		beanDefinitionNames缓存：所有被加载到 BeanFactory 中的 bean 的 beanName 集合。
 			//		beanDefinitionMap缓存：所有被加载到 BeanFactory 中的 bean 的 beanName 和 BeanDefinition 映射。
@@ -541,8 +538,7 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 				//4.允许子类对 BeanFactory 进行后续处理，默认实现为空，留给子类实现。
 				postProcessBeanFactory(beanFactory);
 
-				//5.实例化和调用所有 BeanFactoryPostProcessor,包括子类 BeanDefinitionRegistryPostProcessor
-				// BeanDefinitionRegistryPostProcessor 比普通的 BeanFactoryPostProcessor 先被执行，用于用户的拓展
+				//5.实例化和调用所有 BeanFactoryPostProcessor ，里面包换了解析注解中定义的 bean 封装为 BeanDefinition 的方法
 				invokeBeanFactoryPostProcessors(beanFactory);
 
 				//6.注册所有的 BeanPostProcessor，将所有实现了 BeanPostProcessor 接口的类加载到 BeanFactory 中。

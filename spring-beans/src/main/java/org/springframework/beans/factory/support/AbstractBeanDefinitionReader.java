@@ -220,7 +220,7 @@ public abstract class AbstractBeanDefinitionReader implements EnvironmentCapable
 		if (resourceLoader instanceof ResourcePatternResolver) {
 			// Resource pattern matching available.
 			try {
-				//2.1 根据路径拿到该路径下所有符合的配置文件，并封装成 Resource
+				//2.1 根据传入的路径规则，匹配所有符合的 xml 配置文件，并封装成 Resource
 				Resource[] resources = ((ResourcePatternResolver) resourceLoader).getResources(location);
 				//2.2 根据 Resource，加载 BeanDefinition
 				int loadCount = loadBeanDefinitions(resources);
@@ -240,7 +240,7 @@ public abstract class AbstractBeanDefinitionReader implements EnvironmentCapable
 			}
 		}
 		else {
-			//3.只能通过绝对 URL 加载单个资源
+			//3.每次只能解析一个 xml 配置文件
 			Resource resource = resourceLoader.getResource(location);
 			//3.1 根据 Resource，加载 BeanDefinition
 			int loadCount = loadBeanDefinitions(resource);

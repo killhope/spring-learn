@@ -126,20 +126,21 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 	public void multicastEvent(ApplicationEvent event) {
 		multicastEvent(event, resolveDefaultEventType(event));
 	}
-
+	//SimpleApplicationEventMulticaster 本身是事件广播器，作用是拿到事件发布器的事件，广播给监听器
 	@Override
 	public void multicastEvent(final ApplicationEvent event, @Nullable ResolvableType eventType) {
+		// resolveDefaultEventType 用来包装 ApplicationEvent 的具体类型，目的是可以更方便的获取对象和类的一些信息（父类、接口、泛型等）
 		ResolvableType type = (eventType != null ? eventType : resolveDefaultEventType(event));
-		//1.返回与给定事件类型匹配的应用监听器集合
+		//1.getApplicationListeners 获取匹配的监听器，广播事件
 		for (final ApplicationListener<?> listener : getApplicationListeners(event, type)) {
-			//2.返回此广播器的当前任务执行程序
+			//2.获取异步执行的线程池
 			Executor executor = getTaskExecutor();
 			if (executor != null) {
-				//3.1 executor 不为 null，则使用 executor 调用监听器，执行监听器的 onApplicationEvent 方法
+				//3.使用线程池异步调用监听器广播事件
 				executor.execute(() -> invokeListener(listener, event));
 			}
 			else {
-				//3.2 否则，直接调用监听器，执行监听器的 onApplicationEvent 方法
+				//3.直接调用监听器广播事件
 				invokeListener(listener, event);
 			}
 		}
@@ -156,19 +157,19 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 	 * @since 4.1
 	 */
 	protected void invokeListener(ApplicationListener<?> listener, ApplicationEvent event) {
-		//1.返回此广播器的当前错误处理程序
 		ErrorHandler errorHandler = getErrorHandler();
 		if (errorHandler != null) {
 			try {
+				//调用监听器，发布时间（listener 是监听器）
 				doInvokeListener(listener, event);
 			}
 			catch (Throwable err) {
-				//2.1 如果 errorHandler 不为null，则使用带错误处理的方式调用给定的监听器
+				//如果有处理错误的程序，出现异常走错误处理的程序
 				errorHandler.handleError(err);
 			}
 		}
 		else {
-			//2.2 否则，直接调用调用给定的监听器
+			//直接调用给定的监听器
 			doInvokeListener(listener, event);
 		}
 	}
@@ -176,6 +177,7 @@ public class SimpleApplicationEventMulticaster extends AbstractApplicationEventM
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	private void doInvokeListener(ApplicationListener listener, ApplicationEvent event) {
 		try {
+			//监听器的逻辑
 			listener.onApplicationEvent(event);
 		}
 		catch (ClassCastException ex) {

@@ -54,6 +54,7 @@ final class PostProcessorRegistrationDelegate {
 		* 注：BeanDefinitionRegistryPostProcessor 是 BeanFactoryPostProcessor 的特殊情况。
 		* 整段代码就是先执行 BeanDefinitionRegistryPostProcessor 的方法 postProcessBeanDefinitionRegistry，
 		* 然后执行普通 BeanFactoryPostProcessor 的 postProcessBeanFactory 方法。
+		* ConfigurationClassPostProcessor 是 BeanDefinitionRegistryPostProcessor 的实现类，是最先被执行的 BeanDefinitionRegistryPostProcessor，该方法是解析注解配置类中定义的 bean ，并封装为 BeanDefinition
 		*
 		*  1.处理 beanFactory 为 BeanDefinitionRegistry 的情况
 		* 		1.1 处理入参中 BeanDefinitionRegistryPostProcessor
